@@ -142,7 +142,7 @@ REST over JSON. Errors are RFC 7807 `application/problem+json` with a `traceId`;
 | `GET /api/catalog/products/{slug}/reviews?page` | public | Visible reviews |
 | `GET /api/images/{id}` | public | Image bytes with long cache headers (ID is content-addressed) |
 | `POST /api/auth/register`, `POST /api/auth/sign-in`, `POST /api/auth/sign-out` | public (sign-out: user) | Rate-limited |
-| `GET /api/auth/me` | public | Current user or `401` |
+| `GET /api/auth/me` | public | `{ user }`, with `user: null` for guests (200 either way, so guest page loads log no errors); also refreshes the XSRF cookie |
 | `POST /api/cart/quote` `{items}` | public, rate-limited | Price a guest cart (nothing persisted) |
 | `GET /api/cart`; `PUT /api/cart/items/{productId}` `{quantity}`; `DELETE /api/cart/items/{productId}`; `DELETE /api/cart`; `POST /api/cart/merge` | customer | The caller's own cart only |
 | `POST /api/checkout` | customer | Create an order from the cart; returns the order plus a payment action |
@@ -159,7 +159,10 @@ REST over JSON. Errors are RFC 7807 `application/problem+json` with a `traceId`;
 | `PUT /api/admin/reviews/{id}/visibility` | admin | |
 | `POST /api/admin/demo/reset` | admin | Enabled only when `DEMO_MODE=true` |
 
-CSRF: the session cookie is `HttpOnly; Secure; SameSite=Strict`. Unsafe methods also need an antiforgery header (`X-XSRF-TOKEN`), which Angular's built-in XSRF support sends.
+CSRF: the session cookie is `HttpOnly; Secure; SameSite=Strict`. Every unsafe `/api` request, sign-in and register included, also needs `X-XSRF-TOKEN` matching the readable `XSRF-TOKEN` cookie; Angular's built-in XSRF support sends it.
+
+- Tokens are bound to the user and are reissued on `/me`, sign-in, register and sign-out.
+- Requests matching no endpoint fall under the authenticated fallback policy: guests get 401, signed-in users get 404, both as problem details.
 
 ## 8. Data model (PostgreSQL)
 

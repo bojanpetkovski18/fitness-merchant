@@ -79,11 +79,60 @@
         </svg>
       </a>
 
-      <a
-        routerLink="/sign-in"
-        class="hidden rounded-md bg-accent px-4 py-2 text-sm font-bold text-on-accent hover:bg-accent-strong md:inline-block"
-        >Sign in</a
-      >
+      @if (session.user(); as user) {
+        <button
+          type="button"
+          class="hidden items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-fg hover:bg-surface-2 md:flex"
+          [cdkMenuTriggerFor]="accountMenu"
+          [attr.aria-label]="'Account menu for ' + user.displayName"
+        >
+          <span
+            aria-hidden="true"
+            class="grid size-7 place-items-center rounded-full bg-accent text-xs font-black text-on-accent"
+            >{{ initials(user.displayName) }}</span
+          >
+          <span class="max-w-32 truncate">{{ user.displayName }}</span>
+          <svg aria-hidden="true" viewBox="0 0 20 20" class="size-4 text-muted" fill="currentColor">
+            <path d="M5.5 7.5 10 12l4.5-4.5" stroke="currentColor" stroke-width="1.5" fill="none" />
+          </svg>
+        </button>
+        <ng-template #accountMenu>
+          <div
+            cdkMenu
+            class="min-w-48 rounded-md border border-border bg-surface p-1 text-sm shadow-lg"
+          >
+            <p class="truncate px-3 py-2 text-xs text-muted">{{ user.email }}</p>
+            @if (session.isAdmin()) {
+              <a
+                cdkMenuItem
+                routerLink="/admin"
+                class="block rounded px-3 py-2 hover:bg-surface-2 focus:bg-surface-2"
+                >Admin</a
+              >
+            }
+            <a
+              cdkMenuItem
+              routerLink="/account"
+              class="block rounded px-3 py-2 hover:bg-surface-2 focus:bg-surface-2"
+              >My account</a
+            >
+            <button
+              cdkMenuItem
+              type="button"
+              class="block w-full rounded px-3 py-2 text-left hover:bg-surface-2 focus:bg-surface-2"
+              (cdkMenuItemTriggered)="signOut()"
+            >
+              Sign out
+            </button>
+          </div>
+        </ng-template>
+      } @else {
+        <a
+          routerLink="/sign-in"
+          class="hidden rounded-md bg-accent px-4 py-2 text-sm font-bold text-on-accent hover:bg-accent-strong md:inline-block"
+          >Sign in</a
+        >
+      }
 
       <button
         #menuButton
@@ -135,11 +184,43 @@
           }
         </ul>
       </nav>
-      <a
-        routerLink="/sign-in"
-        class="mt-4 block rounded-md bg-accent px-4 py-3 text-center font-bold text-on-accent hover:bg-accent-strong"
-        >Sign in</a
-      >
+      @if (session.user(); as user) {
+        <p class="mt-4 text-sm text-muted">
+          Signed in as <span class="font-semibold text-fg">{{ user.displayName }}</span>
+        </p>
+        <ul class="mt-2 flex flex-col">
+          @if (session.isAdmin()) {
+            <li>
+              <a routerLink="/admin" class="block border-b border-border py-3 font-semibold text-fg"
+                >Admin</a
+              >
+            </li>
+          }
+          <li>
+            <a routerLink="/account" class="block border-b border-border py-3 font-semibold text-fg"
+              >My account</a
+            >
+          </li>
+        </ul>
+        <button
+          type="button"
+          class="mt-4 block w-full rounded-md border border-border px-4 py-3 text-center font-bold text-fg hover:bg-surface-2"
+          (click)="signOut()"
+        >
+          Sign out
+        </button>
+      } @else {
+        <a
+          routerLink="/sign-in"
+          class="mt-4 block rounded-md bg-accent px-4 py-3 text-center font-bold text-on-accent hover:bg-accent-strong"
+          >Sign in</a
+        >
+        <a
+          routerLink="/register"
+          class="mt-2 block rounded-md border border-border px-4 py-3 text-center font-bold text-fg hover:bg-surface-2"
+          >Create account</a
+        >
+      }
       <button
         type="button"
         class="mt-2 w-full rounded-md px-4 py-3 text-sm font-semibold text-muted hover:text-fg"

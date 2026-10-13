@@ -41,19 +41,25 @@ public class ApiBasicsTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task Unknown_route_returns_problem_details_with_trace_id()
+    public async Task Unknown_route_is_401_for_guests_and_404_for_signed_in_users_both_as_problem_details()
     {
+        // The fallback authorization policy also covers requests that match no endpoint, so guests cannot
+        // probe which API routes exist (D021).
         await using var factory = new ApiFactory(await postgres.CreateDatabaseAsync());
-        using var client = factory.CreateClient();
+        using var browser = factory.CreateBrowserClient();
 
-        var response = await client.GetAsync("/api/does-not-exist", Ct);
+        var asGuest = await browser.Http.GetAsync("/api/does-not-exist", Ct);
+        await browser.RegisterAsync(BrowserClient.NewEmail());
+        var asCustomer = await browser.Http.GetAsync("/api/does-not-exist", Ct);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(Ct);
-        Assert.NotNull(problem);
-        Assert.Equal(404, problem.Status);
-        Assert.True(problem.Extensions.ContainsKey("traceId"));
+        foreach (var (response, status) in new[] { (asGuest, 401), (asCustomer, 404) })
+        {
+            Assert.Equal(status, (int)response.StatusCode);
+            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(Ct);
+            Assert.Equal(status, problem!.Status);
+            Assert.True(problem.Extensions.ContainsKey("traceId"));
+        }
     }
 
     [Fact]

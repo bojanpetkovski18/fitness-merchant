@@ -233,3 +233,42 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **Trade-offs:**
   - Seeding never updates an existing catalog. Changing seed content means re-seeding (documented in CLAUDE.md Commands). Acceptable for a demo store with a reset.
   - SHA-256-derived IDs are not time-ordered like v7. Fine for about 70 seed rows; runtime rows use v7.
+
+## D021: Authentication details (M03)
+- **Date:** 2026-10-13
+- **Identity:**
+  - `AddIdentityCore` with roles, EF stores and SignInManager; Guid keys; snake_case tables (`users`, `roles`, `user_roles` and the rest).
+  - Both roles are inserted by the migration with fixed IDs, so registration works with seeding off.
+  - .NET 10's optional passkeys table is not mapped (schema version 3 not opted into).
+- **Passwords and lockout:** SPEC section 5 (at least 10 characters plus Identity's character-class defaults); lockout after 5 failures for 5 minutes, also for new users.
+- **Session cookie:**
+  - `fm_session`: HttpOnly, SameSite=Strict, Secure everywhere except Development over http; 7-day sliding expiry; persistent.
+  - Redirects are replaced by 401/403, which the status-code-pages middleware renders as problem details.
+- **Authorization:**
+  - The fallback policy is "authenticated user"; health, images, auth and the dev API explorer are explicitly anonymous.
+  - The `Admin` policy requires the Admin role.
+  - Side effect: an unknown `/api` path gives guests 401 (no route probing) and signed-in users 404.
+- **CSRF (refines D005):**
+  - `AntiforgeryValidationMiddleware` validates every unsafe `/api` request, including sign-in and register, which blocks login CSRF. The built-in antiforgery middleware only checks form posts.
+  - Endpoints can opt out with `.DisableAntiforgery()`; the Stripe webhook in M07 will.
+  - The readable `XSRF-TOKEN` cookie is reissued whenever the user changes. Verified: a token from before sign-in is rejected after it.
+- **`/api/auth/me`** returns 200 `{ user: null }` for guests instead of 401, because browsers log every 4xx as a console error and guests load it on every page.
+- **Generic failures and lockout:**
+  - Wrong password, unknown email and locked-out account all return the same 401 "Invalid email or password."
+  - For unknown emails a dummy password hash is computed, so response timing does not reveal which emails exist.
+  - Registering an existing email does say so (a field error). That is unavoidable for usable sign-up and acceptable here.
+- **Rate limiting:**
+  - Sign-in and register are limited to 10 requests per 60 s per client IP (`RateLimiting__AuthPermitLimit` / `__AuthWindowSeconds`). The response is 429 problem details with `Retry-After`.
+  - "Per account" protection is Identity lockout.
+  - Behind a reverse proxy the client IP needs forwarded headers; tracked as K5 for deployment (M14).
+- **Demo users:**
+  - Created from `DEMO_ADMIN_*` / `DEMO_CUSTOMER_*` at startup when seeding is on; never from the repository.
+  - Existing accounts are not changed; a missing setting skips that user with a warning; errors log Identity error codes, never the password.
+- **Test seam:** `IEndpointMapper` implementations in DI are mapped at startup. Production registers none; tests add an admin-only and an unannotated probe endpoint to test the policies.
+- **Frontend:**
+  - `SessionStore` (signals) loads through `provideAppInitializer` and never throws, so the app still starts as a guest if the API is down.
+  - Nothing auth-related goes into web storage (verified in the browser).
+  - Return URLs are restricted to same-site paths (open-redirect guard).
+  - Reactive Forms (stable) rather than experimental Signal Forms.
+  - CDK Menu for the account menu, with its overlay CSS added to the build.
+- **Analyzers:** CA1861 (constant array arguments) is disabled for tests, like CA1707.

@@ -8,8 +8,8 @@ public static class HealthEndpoints
     /// </summary>
     public static IEndpointRouteBuilder MapHealthEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapHealthChecks("/health/live", new() { Predicate = _ => false });
-        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/health/live", new() { Predicate = _ => false }).AllowAnonymous();
+        app.MapHealthChecks("/health").AllowAnonymous();
         return app;
     }
 }

@@ -27,6 +27,8 @@ charset = utf-8-bom
 [tests/**.cs]
 # Test names read as sentences: Unknown_route_returns_problem_details.
 dotnet_diagnostic.CA1707.severity = none
+# Constant arrays in assertions are clearer than static fields; allocation cost is irrelevant in tests.
+dotnet_diagnostic.CA1861.severity = none
 
 [*.{csproj,props,targets,slnx,xml}]
 indent_size = 2

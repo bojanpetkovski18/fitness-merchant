@@ -24,7 +24,8 @@ public static class ImageEndpoints
                 await query.ExecuteAsync(id, cancellationToken) is { } image
                     ? Results.File(image.Data, image.ContentType)
                     : Results.NotFound())
-            .WithName("GetImage");
+            .WithName("GetImage")
+            .AllowAnonymous();
 
         return app;
     }

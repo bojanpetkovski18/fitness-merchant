@@ -1,5 +1,8 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { SessionStore } from '../auth/session.store';
 import { SiteHeader } from './site-header';
 
 describe('SiteHeader', () => {
@@ -13,7 +16,7 @@ describe('SiteHeader', () => {
     localStorage.clear();
     TestBed.configureTestingModule({
       imports: [SiteHeader],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     });
     fixture = TestBed.createComponent(SiteHeader);
     element = fixture.nativeElement as HTMLElement;
@@ -76,5 +79,29 @@ describe('SiteHeader', () => {
     expect(['light', 'dark']).toContain(themeAfter);
     expect(themeAfter).not.toBe(themeBefore);
     expect(toggle().getAttribute('aria-label')).not.toBe(labelBefore);
+  });
+
+  it('shows Sign in for guests and an account menu with initials for signed-in users', async () => {
+    expect(element.textContent).toContain('Sign in');
+
+    const loading = TestBed.inject(SessionStore).load();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/auth/me')
+      .flush({
+        user: {
+          id: '1',
+          email: 'c@test.example',
+          displayName: 'Demo Customer',
+          roles: ['Customer'],
+        },
+      });
+    await loading;
+    await fixture.whenStable();
+
+    const accountButton = element.querySelector<HTMLButtonElement>(
+      'button[aria-label^="Account menu"]',
+    );
+    expect(accountButton?.getAttribute('aria-label')).toBe('Account menu for Demo Customer');
+    expect(accountButton?.textContent).toContain('DC');
   });
 });
