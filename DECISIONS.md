@@ -103,6 +103,7 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **Why:** Free and cheap hosts often have no persistent disk. The volume is small (fewer than 200 images); demo reset becomes trivial.
 - **Alternatives:** Object storage (S3/R2: another account and secret); local disk volume (lost on redeploy on many hosts).
 - **Trade-offs:** DB size grows with images; acceptable at this scale. Revisit if the image count grows.
+- **M02 note (2026-10-13):** seed artwork is SVG generated in code (`image/svg+xml`), not WebP. Only plain shapes and text are allowed; unit tests reject scripts, styles, `foreignObject`, `href` and `on*` attributes. Uploads (M09) stay PNG/JPEG/WebP and are re-encoded to WebP. The whole seed set is 68 images, 60 kB.
 
 ## D010: Payment gateway behind an interface: Fake plus Stripe Checkout test mode
 - **Date:** 2026-10-13
@@ -127,7 +128,10 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **Verified at M01 (2026-10-13):**
   - xUnit v3 4.0.1 runs on Microsoft.Testing.Platform. The .NET 10 SDK refuses the VSTest path for it, so `global.json` opts `dotnet test` into MTP, and `Microsoft.NET.Test.Sdk` / `xunit.runner.visualstudio` are not used.
   - Vitest 5.0.2 with jsdom 30.1.1 is the CLI's default runner (`--test-runner` default `vitest`).
-  - Testcontainers comes in M02 (candidate 4.15.0, published 2026-09-06).
+  - Testcontainers.PostgreSql 4.15.0 (published 2026-09-06; 4.16.0 was too new), image `postgres:18.6-alpine` like dev.
+- **Test isolation (M02):**
+  - One container per run (xUnit v3 assembly fixture). A template database is migrated and seeded once; each test gets its own clone via `CREATE DATABASE … TEMPLATE`.
+  - No reset library (Respawn) and no shared state between tests, so tests can run in parallel. The full suite takes about 12 s on M1.
 
 ## D012: Money and currency
 - **Date:** 2026-10-13
@@ -204,3 +208,28 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - `cdkTrapFocusAutoCapture` was removed because, on destroy, it restored focus to whatever was focused when the menu opened. The browser pass caught this; the regression test is in `site-header.spec.ts`.
 - **Browser verification until M13:** Playwright 1.63.0 with `@axe-core/playwright`, run from a scratch folder outside the repo. M13 adds the committed Playwright suite.
 - **Deferred:** startup validation of required configuration starts in M02 with the first required setting (the connection string). M01 has no required settings.
+
+## D020: Data layer and seed conventions (M02)
+- **Date:** 2026-10-13
+- **Naming:** `EFCore.NamingConventions` 10.0.1 maps everything to snake_case. Hand-written SQL (psql checks, dashboard queries in M10) then needs no quoted identifiers.
+- **Integrity in the database too:**
+  - Check constraints: price ≥ 0, discount 0–90, stock ≥ 0, rating 0–5, accent colour `#rrggbb`.
+  - Unique slugs, SKUs and brand names.
+  - `RESTRICT` on category and brand foreign keys; `SET NULL` when an image is removed.
+  - `Product.Version` maps to PostgreSQL's `xmin` system column as the optimistic-concurrency token (no extra column).
+- **Configuration:**
+  - `ConnectionStrings:Database` is required at startup with a clear error message (the M01 deferral is done).
+  - In Development only, the API reads the repository-root `.env` (the file Docker Compose uses); real environment variables win. This avoids keeping settings in two places (`.env` plus user-secrets).
+- **Seeding:**
+  - Runs at startup when `Seed__Enabled=true`, only into an **empty** catalog, in one transaction.
+  - IDs are deterministic (RFC 9562 version 8 from SHA-256 of a key such as `product:<slug>`); timestamps are relative to the seed time, so "new arrivals" stays fresh.
+  - The M12 demo reset empties the catalog and seeds again.
+  - SKUs are `<brand prefix>-<0001>`.
+  - Images are content-addressed. A unit test requires every product to have distinct artwork, because identical SVGs would otherwise silently share one image; the browser contact sheet exposed exactly that for three products.
+- **Health:** `/health/live` checks only the process; `/health` includes `AddDbContextCheck` and returns 503 when the database is unreachable.
+- **Analyzers and generated code:**
+  - The Migrations folder is marked `generated_code = true` and `charset = utf-8-bom`, because EF writes migrations with block namespaces, constant arrays and a BOM.
+  - Logging uses source-generated `[LoggerMessage]` methods (CA1848).
+- **Trade-offs:**
+  - Seeding never updates an existing catalog. Changing seed content means re-seeding (documented in CLAUDE.md Commands). Acceptable for a demo store with a reset.
+  - SHA-256-derived IDs are not time-ordered like v7. Fine for about 70 seed rows; runtime rows use v7.

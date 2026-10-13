@@ -1,8 +1,11 @@
 using FitnessMerchant.Api.Common;
 using FitnessMerchant.Api.Features.Health;
+using FitnessMerchant.Api.Features.Images;
+using FitnessMerchant.Api.Infrastructure.Data;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddDevelopmentDotEnv();
 
 builder.Logging.ClearProviders();
 if (builder.Environment.IsDevelopment())
@@ -16,9 +19,12 @@ else
 
 builder.Services.AddApiProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddHealthChecks();
+builder.AddAppDatabase();
+builder.Services.AddScoped<GetImageQuery>();
 
 var app = builder.Build();
+
+await app.InitializeDatabaseAsync();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -31,5 +37,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthEndpoints();
+app.MapImageEndpoints();
 
-app.Run();
+await app.RunAsync();

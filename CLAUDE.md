@@ -47,6 +47,7 @@ All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.
 **One-time setup**
 - `cp .env.example .env`: local settings; `.env` is git-ignored.
 - `cd src/web && npm ci`: installs the exact locked web dependencies.
+- `dotnet tool restore`: installs the pinned `dotnet-ef` (from `dotnet-tools.json`). Verified 2026-10-13 (M02).
 
 **Database (dev)**
 - `docker compose -f docker-compose.dev.yml up -d`: starts PostgreSQL 18.6 on `127.0.0.1:5433` (healthcheck included).
@@ -55,8 +56,11 @@ All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.
 
 **API** (`src/api/FitnessMerchant.Api`)
 - `dotnet build FitnessMerchant.slnx`: builds everything; warnings are errors.
-- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`).
-- `dotnet run --project src/api/FitnessMerchant.Api`: runs the API on `http://localhost:5080`. In Development, API docs are at `/scalar` and `/openapi/v1.json`.
+- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`). Integration tests start their own PostgreSQL container through Testcontainers, so Docker must be running; the dev database is not used. About 12 s on M1.
+- `dotnet test --project tests/FitnessMerchant.Api.IntegrationTests --output Detailed`: one project with per-test timings.
+- `dotnet run --project src/api/FitnessMerchant.Api`: runs the API on `http://localhost:5080`. In Development it reads the repo-root `.env`, applies migrations (`Database__MigrateOnStartup`) and seeds an empty catalog (`Seed__Enabled`). API docs are at `/scalar` and `/openapi/v1.json`. Health: `/health` (includes the DB) and `/health/live`.
+- `dotnet ef migrations add <Name> --project src/api/FitnessMerchant.Api --output-dir Infrastructure/Data/Migrations`: adds a migration. Review it with `dotnet ef migrations script --project src/api/FitnessMerchant.Api` (build first; `--no-build` uses the last build). A forgotten migration fails the test suite (`Model_matches_the_migrations`; EF also refuses `MigrateAsync`).
+- Re-seed the dev catalog: stop the API, run `docker compose -f docker-compose.dev.yml exec -T db psql -U fitness_merchant -d fitness_merchant -c "truncate products, brands, categories, images;"`, then start the API again.
 
 **Web** (`src/web`)
 - `npm start`: dev server on `http://localhost:4200`, proxying `/api` and `/health` to the API.
