@@ -20,8 +20,9 @@ csharp_style_var_when_type_is_apparent = true:suggestion
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
 
 [src/api/**/Migrations/*.cs]
-# EF Core migrations are tool-generated; analyzers treat them as generated code.
+# EF Core migrations are tool-generated (always UTF-8 with BOM); analyzers treat them as generated code.
 generated_code = true
+charset = utf-8-bom
 
 [tests/**.cs]
 # Test names read as sentences: Unknown_route_returns_problem_details.
