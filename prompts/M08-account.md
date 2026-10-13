@@ -1,6 +1,6 @@
 # M08: My account
 
-Branch: `#0008-account`
+Branch: `#0008-account-profile-password-and-order-history`
 
 ## Goal
 A complete account area: profile, password change, order history and order detail with cancel.

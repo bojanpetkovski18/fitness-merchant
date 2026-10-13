@@ -1,0 +1,16 @@
+<a
+  href="#main"
+  class="sr-only z-50 rounded-md bg-accent px-4 py-2 font-bold text-on-accent focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+  (click)="skipToContent($event)"
+  >Skip to content</a
+>
+
+<div class="flex min-h-dvh flex-col">
+  <app-site-header />
+
+  <main #main id="main" tabindex="-1" class="flex-1 outline-none">
+    <router-outlet />
+  </main>
+
+  <app-site-footer />
+</div>

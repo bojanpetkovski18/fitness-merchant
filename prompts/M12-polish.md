@@ -1,6 +1,6 @@
 # M12: Polish: states, responsive, accessibility, performance, demo reset
 
-Branch: `#0012-polish`
+Branch: `#0012-polish-states-responsive-a11y-perf-demo-reset`
 
 ## Goal
 Every screen is finished: consistent states, responsive at every width, accessible, fast. A demo reset keeps the public demo clean. All deferred known issues are reviewed with the owner.

@@ -1,6 +1,6 @@
 # M02: Data model and seed data
 
-Branch: `#0002-data-model`
+Branch: `#0002-catalog-schema-seed-data-and-artwork`
 
 ## Goal
 The catalog schema in PostgreSQL via EF Core migrations, with deterministic fictional seed data and original SVG artwork, plus an integration-test base using Testcontainers.

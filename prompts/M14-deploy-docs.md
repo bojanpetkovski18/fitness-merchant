@@ -1,6 +1,6 @@
 # M14: Deployment, README, architecture and portfolio kit
 
-Branch: `#0014-deploy-docs`
+Branch: `#0014-deployment-readme-architecture-portfolio`
 
 ## Goal
 A deployed public demo with documented limits and cost, a client-facing README, an accurate architecture document, a portfolio kit, and a clean security scan before the repository goes public.
