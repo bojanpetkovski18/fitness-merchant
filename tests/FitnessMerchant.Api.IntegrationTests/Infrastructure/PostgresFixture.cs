@@ -1,5 +1,7 @@
 using FitnessMerchant.Api.Infrastructure.Data;
+using FitnessMerchant.Api.Infrastructure.Seed;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using Testcontainers.PostgreSql;
 
@@ -34,7 +36,7 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _container.DisposeAsync();
 
-    /// <summary>A new database with the current schema (and, from M02 seeding on, the seed data).</summary>
+    /// <summary>A new database with the current schema and the seed catalog.</summary>
     public Task<string> CreateDatabaseAsync() => CreateDatabaseAsync(fromTemplate: true);
 
     /// <summary>A new, completely empty database (no schema), for migration tests.</summary>
@@ -46,7 +48,11 @@ public sealed class PostgresFixture : IAsyncLifetime
             .UseSnakeCaseNamingConvention()
             .Options);
 
-    internal static async Task PrepareTemplateAsync(AppDbContext db) => await db.Database.MigrateAsync();
+    internal static async Task PrepareTemplateAsync(AppDbContext db)
+    {
+        await db.Database.MigrateAsync();
+        await new CatalogSeeder(db, TimeProvider.System, NullLogger<CatalogSeeder>.Instance).SeedAsync();
+    }
 
     private async Task<string> CreateDatabaseAsync(bool fromTemplate)
     {

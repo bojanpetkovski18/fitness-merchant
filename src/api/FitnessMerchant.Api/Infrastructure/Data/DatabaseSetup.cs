@@ -1,3 +1,4 @@
+using FitnessMerchant.Api.Infrastructure.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -31,6 +32,9 @@ public static class DatabaseSetup
             .UseSnakeCaseNamingConvention());
 
         builder.Services.AddOptions<DatabaseOptions>().Bind(builder.Configuration.GetSection(DatabaseOptions.Section));
+        builder.Services.AddOptions<SeedOptions>().Bind(builder.Configuration.GetSection(SeedOptions.Section));
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddScoped<CatalogSeeder>();
 
         builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database", tags: ["ready"]);
 
@@ -46,6 +50,11 @@ public static class DatabaseSetup
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await db.Database.MigrateAsync();
+        }
+
+        if (scope.ServiceProvider.GetRequiredService<IOptions<SeedOptions>>().Value.Enabled)
+        {
+            await scope.ServiceProvider.GetRequiredService<CatalogSeeder>().SeedAsync();
         }
     }
 }

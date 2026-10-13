@@ -1,5 +1,6 @@
 using FitnessMerchant.Api.Common;
 using FitnessMerchant.Api.Features.Health;
+using FitnessMerchant.Api.Features.Images;
 using FitnessMerchant.Api.Infrastructure.Data;
 using Scalar.AspNetCore;
 
@@ -19,6 +20,7 @@ else
 builder.Services.AddApiProblemDetails();
 builder.Services.AddOpenApi();
 builder.AddAppDatabase();
+builder.Services.AddScoped<GetImageQuery>();
 
 var app = builder.Build();
 
@@ -35,5 +37,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthEndpoints();
+app.MapImageEndpoints();
 
 await app.RunAsync();
