@@ -1,6 +1,6 @@
 # M03: Authentication
 
-Branch: `#0003-auth`
+Branch: `#0003-cookie-auth-identity-roles-and-csrf`
 
 ## Goal
 Secure cookie-based registration, sign-in and sign-out with roles, antiforgery and rate limits, plus the Angular session store, guards and auth pages.

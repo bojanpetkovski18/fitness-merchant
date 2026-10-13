@@ -1,6 +1,6 @@
 # M01: Skeleton, CI and app shell
 
-Branch: `#0001-skeleton`
+Branch: `#0001-solution-skeleton-ci-and-app-shell`
 
 ## Goal
 A building, testable, linted skeleton for API and web, a local Postgres via Docker Compose, CI that enforces quality gates, and an Angular app shell (layout, navigation, theming, routing) that later milestones fill in.

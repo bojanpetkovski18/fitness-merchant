@@ -1,6 +1,6 @@
 # M11: Reviews and ratings
 
-Branch: `#0011-reviews`
+Branch: `#0011-verified-buyer-reviews-and-ratings`
 
 ## Goal
 Verified buyers can review products. Product ratings are real and consistent, and admins can hide abusive reviews.

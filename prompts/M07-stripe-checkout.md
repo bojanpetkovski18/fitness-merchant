@@ -1,6 +1,6 @@
 # M07: Stripe Checkout (test mode)
 
-Branch: `#0007-stripe`
+Branch: `#0007-stripe-checkout-test-mode-and-webhooks`
 
 ## Goal
 With `Payments__Provider=Stripe`, checkout redirects to Stripe's hosted Checkout page in test mode. A signature-verified, idempotent webhook marks orders paid, and abandoned payments are expired and restocked.

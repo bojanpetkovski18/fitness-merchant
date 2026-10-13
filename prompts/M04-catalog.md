@@ -1,6 +1,6 @@
 # M04: Catalog (API + storefront)
 
-Branch: `#0004-catalog`
+Branch: `#0004-catalog-search-filters-and-storefront-pages`
 
 ## Goal
 Shoppers can browse, search, filter, sort and page the catalog, view product details and brands, and see a real home page, all backed by efficient SQL.

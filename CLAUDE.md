@@ -67,7 +67,7 @@ _None verified yet (Phase 0)._
 - **Known issues** the owner chooses to defer go to `PROGRESS.md` → Known issues. Remind the owner when they become relevant, and in M12.
 
 ## Git
-- Start each milestone from a freshly pulled `dev`, on a new branch `#00nn-short-name` (e.g. `#0004-catalog`).
+- Start each milestone from a freshly pulled `dev`, on a new branch `#00nn-descriptive-name`: the milestone number plus 3–7 kebab-case words saying what it delivers (e.g. `#0004-catalog-search-filters-and-storefront-pages`). The planned names are in `PROGRESS.md`.
 - Commit in small steps; each commit builds and passes its tests. Subjects are short and imperative ("Add product search endpoint"), with one logical change per commit.
 - Push the branch when done. The owner opens and merges the PR. Never push to `dev` or `main` unless told to. Never force-push shared branches.
 - End commit messages with the co-author trailer given by the environment, if any.

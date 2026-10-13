@@ -1,6 +1,6 @@
 # M06: Checkout and orders (fake gateway)
 
-Branch: `#0006-checkout`
+Branch: `#0006-checkout-orders-and-fake-payment-gateway`
 
 ## Goal
 A customer turns their cart into an order in a single atomic transaction, pays with the fake gateway, and sees a confirmation and their order history. Overselling is impossible.

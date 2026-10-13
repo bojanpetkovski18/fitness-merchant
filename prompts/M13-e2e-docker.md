@@ -1,6 +1,6 @@
 # M13: End-to-end test, production Docker and Compose
 
-Branch: `#0013-e2e-docker`
+Branch: `#0013-e2e-test-production-docker-and-compose`
 
 ## Goal
 One production image and a `docker-compose.yml` that runs the whole stack with one command from a fresh clone. A Playwright flow runs in CI against that image.

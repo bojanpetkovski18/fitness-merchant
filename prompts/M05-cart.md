@@ -1,6 +1,6 @@
 # M05: Cart (server cart + guest cart merge)
 
-Branch: `#0005-cart`
+Branch: `#0005-server-cart-with-guest-cart-merge`
 
 ## Goal
 A reliable cart: guests keep it in the browser, customers on the server, and the two merge on sign-in. Totals and stock rules are always enforced server-side.

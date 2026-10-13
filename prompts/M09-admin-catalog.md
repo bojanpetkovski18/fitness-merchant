@@ -1,6 +1,6 @@
 # M09: Admin catalog and image upload
 
-Branch: `#0009-admin-catalog`
+Branch: `#0009-admin-catalog-crud-and-image-upload`
 
 ## Goal
 Admins manage products, categories and brands, including validated image uploads, through a clean admin area.

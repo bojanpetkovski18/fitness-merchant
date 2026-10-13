@@ -128,8 +128,10 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 ## D013: Branches and milestone numbering
 - **Date:** 2026-10-13
 - **Decision:**
-  - The branch for milestone `Mnn` is `#00nn-short-name` (e.g. `#0004-catalog`); Phase 0 is `#0000-project-setup`.
-  - PRs target `dev`.
+  - The branch for milestone `Mnn` is `#00nn-descriptive-name`: the number plus 3–7 kebab-case words describing what it delivers (e.g. `#0004-catalog-search-filters-and-storefront-pages`). Phase 0 was `#0000-project-setup`.
+  - The planned names are listed in `PROGRESS.md` and in each milestone brief.
+  - PRs target `dev`, which is the GitHub default branch.
+- **Changed 2026-10-13:** The owner asked for more descriptive names than the original short ones (`#0004-catalog`).
 
 ## D014: Visual identity: dark-first with an amber accent, light theme available
 - **Date:** 2026-10-13

@@ -1,6 +1,6 @@
 # M10: Admin orders, dashboard and CSV export
 
-Branch: `#0010-admin-orders`
+Branch: `#0010-admin-orders-dashboard-and-csv-export`
 
 ## Goal
 Admins process orders through the allowed status transitions, see sales metrics for a date range, and export orders to a safe CSV.
