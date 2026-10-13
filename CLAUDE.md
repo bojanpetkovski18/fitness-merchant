@@ -45,7 +45,7 @@ Fill this in only after a command has actually been run and verified. Format: co
 All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.0, Docker 29.8.2. Run from the repo root unless a directory is given.
 
 **One-time setup**
-- `cp .env.example .env`: local settings; `.env` is git-ignored.
+- `cp .env.example .env`: local settings; `.env` is git-ignored. Its `DEMO_*` values create the local demo admin and customer on API start (passwords need 10+ characters with upper, lower, digit and symbol).
 - `cd src/web && npm ci`: installs the exact locked web dependencies.
 - `dotnet tool restore`: installs the pinned `dotnet-ef` (from `dotnet-tools.json`). Verified 2026-10-13 (M02).
 
