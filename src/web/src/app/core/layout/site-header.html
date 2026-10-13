@@ -1,0 +1,152 @@
+<header class="sticky top-0 z-40 border-b border-border bg-bg/90 backdrop-blur">
+  <div class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4">
+    <a routerLink="/" class="fm-display shrink-0 text-lg leading-none text-fg">
+      Fitness <span class="text-accent">Merchant</span>
+    </a>
+
+    <nav aria-label="Main" class="hidden md:block">
+      <ul class="flex items-center gap-1">
+        @for (link of links; track link.path) {
+          <li>
+            <a
+              [routerLink]="link.path"
+              routerLinkActive
+              ariaCurrentWhenActive="page"
+              [routerLinkActiveOptions]="{ exact: link.exact }"
+              class="rounded-md px-3 py-2 text-sm font-semibold text-muted hover:text-fg aria-[current=page]:bg-surface-2 aria-[current=page]:text-accent"
+              >{{ link.label }}</a
+            >
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <div class="ml-auto flex items-center gap-1">
+      <button
+        type="button"
+        class="grid size-10 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
+        (click)="theme.toggle()"
+        [attr.aria-label]="
+          theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+        "
+      >
+        @if (theme.theme() === 'dark') {
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            class="size-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+            />
+          </svg>
+        } @else {
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            class="size-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+          </svg>
+        }
+      </button>
+
+      <a
+        routerLink="/cart"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+        aria-label="Cart"
+        class="grid size-10 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          class="size-5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6" />
+          <circle cx="9" cy="20" r="1.25" />
+          <circle cx="17" cy="20" r="1.25" />
+        </svg>
+      </a>
+
+      <a
+        routerLink="/sign-in"
+        class="hidden rounded-md bg-accent px-4 py-2 text-sm font-bold text-on-accent hover:bg-accent-strong md:inline-block"
+        >Sign in</a
+      >
+
+      <button
+        #menuButton
+        type="button"
+        class="grid size-10 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg md:hidden"
+        aria-controls="mobile-menu"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-label]="menuOpen() ? 'Close menu' : 'Open menu'"
+        (click)="toggleMenu()"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          class="size-6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          @if (menuOpen()) {
+            <path d="M6 6l12 12M18 6 6 18" />
+          } @else {
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          }
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  @if (menuOpen()) {
+    <div
+      id="mobile-menu"
+      class="border-t border-border bg-bg px-4 pb-6 pt-2 md:hidden"
+      #mobileMenu
+      cdkTrapFocus
+    >
+      <nav aria-label="Main">
+        <ul class="flex flex-col">
+          @for (link of links; track link.path) {
+            <li>
+              <a
+                [routerLink]="link.path"
+                routerLinkActive
+                ariaCurrentWhenActive="page"
+                [routerLinkActiveOptions]="{ exact: link.exact }"
+                class="block border-b border-border py-3 text-base font-semibold text-fg aria-[current=page]:text-accent"
+                >{{ link.label }}</a
+              >
+            </li>
+          }
+        </ul>
+      </nav>
+      <a
+        routerLink="/sign-in"
+        class="mt-4 block rounded-md bg-accent px-4 py-3 text-center font-bold text-on-accent hover:bg-accent-strong"
+        >Sign in</a
+      >
+      <button
+        type="button"
+        class="mt-2 w-full rounded-md px-4 py-3 text-sm font-semibold text-muted hover:text-fg"
+        (click)="closeMenu(true)"
+      >
+        Close menu
+      </button>
+    </div>
+  }
+</header>

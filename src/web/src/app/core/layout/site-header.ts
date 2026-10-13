@@ -1,0 +1,90 @@
+import { A11yModule } from '@angular/cdk/a11y';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import {
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter } from 'rxjs';
+import { ThemeService } from '../theme/theme.service';
+
+interface NavLink {
+  readonly label: string;
+  readonly path: string;
+  readonly exact: boolean;
+}
+
+/** Matches Tailwind's `md` breakpoint, where the inline nav replaces the mobile menu. */
+const desktopQuery = '(min-width: 48rem)';
+
+@Component({
+  selector: 'app-site-header',
+  imports: [A11yModule, RouterLink, RouterLinkActive],
+  templateUrl: './site-header.html',
+  host: {
+    '(document:keydown.escape)': 'closeMenu(true)',
+  },
+})
+export class SiteHeader {
+  protected readonly theme = inject(ThemeService);
+  protected readonly menuOpen = signal(false);
+  private readonly menuButton = viewChild.required<ElementRef<HTMLButtonElement>>('menuButton');
+  private readonly mobileMenu = viewChild<ElementRef<HTMLElement>>('mobileMenu');
+  private readonly injector = inject(Injector);
+
+  protected readonly links: readonly NavLink[] = [
+    { label: 'Home', path: '/', exact: true },
+    { label: 'Supplements', path: '/supplements', exact: false },
+    { label: 'Gear', path: '/gear', exact: false },
+    { label: 'Brands', path: '/brands', exact: false },
+  ];
+
+  constructor() {
+    inject(Router)
+      .events.pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.menuOpen.set(false));
+
+    inject(BreakpointObserver)
+      .observe(desktopQuery)
+      .pipe(takeUntilDestroyed())
+      .subscribe((state) => {
+        if (state.matches) {
+          this.menuOpen.set(false);
+        }
+      });
+  }
+
+  protected toggleMenu(): void {
+    if (this.menuOpen()) {
+      this.closeMenu(true);
+      return;
+    }
+    this.menuOpen.set(true);
+    // Focus is moved explicitly rather than via cdkTrapFocusAutoCapture: auto-capture restores focus
+    // to whatever was focused at open time when the trap is destroyed, which overrode the return to
+    // the menu button (Escape) and to <main> (navigation).
+    afterNextRender(
+      { write: () => this.mobileMenu()?.nativeElement.querySelector<HTMLElement>('a')?.focus() },
+      { injector: this.injector },
+    );
+  }
+
+  protected closeMenu(returnFocus: boolean): void {
+    if (!this.menuOpen()) {
+      return;
+    }
+    this.menuOpen.set(false);
+    if (returnFocus) {
+      this.menuButton().nativeElement.focus();
+    }
+  }
+}
