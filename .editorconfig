@@ -24,6 +24,9 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+# Nested list items under numbered items are indented 3 spaces (valid Markdown).
+indent_style = unset
+indent_size = unset
 
 [*.{yml,yaml,json}]
 indent_size = 2

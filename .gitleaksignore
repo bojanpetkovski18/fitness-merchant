@@ -1,0 +1,3 @@
+# False positive: a Stripe-style placeholder value in .env.example (Phase 0 commit 159459b).
+# The placeholder was replaced with an empty value in a later commit; no real key was ever committed.
+159459b22f53784a0bcb7c8ac0167152fc683c30:.env.example:stripe-access-token:28
