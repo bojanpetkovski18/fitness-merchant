@@ -7,10 +7,18 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="FitnessMerchant.Api.UnitTests" />
+    <InternalsVisibleTo Include="FitnessMerchant.Api.IntegrationTests" />
   </ItemGroup>
 
 </Project>

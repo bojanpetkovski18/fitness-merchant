@@ -1,8 +1,10 @@
 using FitnessMerchant.Api.Common;
 using FitnessMerchant.Api.Features.Health;
+using FitnessMerchant.Api.Infrastructure.Data;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddDevelopmentDotEnv();
 
 builder.Logging.ClearProviders();
 if (builder.Environment.IsDevelopment())
@@ -16,9 +18,11 @@ else
 
 builder.Services.AddApiProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddHealthChecks();
+builder.AddAppDatabase();
 
 var app = builder.Build();
+
+await app.InitializeDatabaseAsync();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -32,4 +36,4 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthEndpoints();
 
-app.Run();
+await app.RunAsync();
