@@ -41,7 +41,7 @@ A building, testable, linted skeleton for API and web, a local Postgres via Dock
    - dev proxy `/api` → API;
    - one component test (shell renders nav, theme toggle switches theme).
 5. `docker-compose.dev.yml` with Postgres only, a named volume, healthcheck, and credentials from `.env`.
-6. `.github/workflows/ci.yml` on push and PR:
+6. Extend the existing `.github/workflows/ci.yml` (secret scan and repo lint since Phase 0, D018) with these jobs:
    - API: restore, build with warnings as errors, unit and integration tests;
    - web: `npm ci`, lint, format check, test, production build;
    - npm and NuGet caching.

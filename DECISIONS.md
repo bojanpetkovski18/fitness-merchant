@@ -153,3 +153,25 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **Decision:** The owner dropped the feature. The project focuses on the store. Milestones after M11 moved up by one (Polish is now M12, E2E/Docker M13, Deploy/docs M14). SPEC feature number F12 is left unused.
 - **Why:** A tighter scope and a store-centred portfolio story.
 - **Trade-offs:** Less to set the project apart from a generic shop; this can be added later as its own milestone if wanted.
+
+## D018: CI from Phase 0: secret scan and repo lint
+- **Date:** 2026-10-13
+- **Context:** The repository is public from day one, and the owner wants GitHub Actions visible from the start. There is no application code yet.
+- **Decision:** `.github/workflows/ci.yml` runs on pushes to `dev`/`main`, on PRs into them, and on manual dispatch. It has two jobs:
+  - **Secret scan:** gitleaks over the full git history.
+  - **Repository lint:** actionlint on the workflows, plus editorconfig-checker.
+
+  M01 adds the build, lint and test jobs to the same workflow.
+- **Supply chain:**
+  - `actions/checkout` is pinned to a commit SHA (v7.0.1, released 2026-07-20).
+  - The tools are downloaded from their GitHub releases and verified against the published SHA-256:
+    - gitleaks 8.30.1 (2026-03-21);
+    - actionlint 1.7.12 (2026-03-30);
+    - editorconfig-checker 4.0.2 (2026-09-19).
+
+    All were the latest releases and at least two weeks old on 2026-10-13.
+  - The workflow token is read-only (`permissions: contents: read`).
+- **Why:** Catches leaked secrets and broken workflows before they reach `dev`. A plain binary avoids the gitleaks-action licence-key requirement and third-party action code.
+- **False positive handled:** the Stripe-style placeholder in `.env.example` (commit 159459b) is listed in `.gitleaksignore` by fingerprint. The placeholders are now empty values. History was not rewritten because no real secret was involved.
+- **Markdown indentation:** `.editorconfig` unsets indentation rules for `*.md`, because nested items under numbered lists use 3 spaces.
+- **Trade-offs:** Version bumps are manual (update the version and checksum together). Dependabot can be added later for `actions/*`.
