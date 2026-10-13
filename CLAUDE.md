@@ -137,7 +137,7 @@ Assumptions and decisions logged: <list>
 Known issues: <list or "none">
 Suggested next step: <one line>
 ```
-Then give a pull request description as Markdown in the chat, not in a file. It starts with a line naming its readers and has these sections:
+After every push, give a pull request description in the chat, not in a file, as raw Markdown inside a fenced code block so the owner can paste it into GitHub. It covers the whole branch, starts with a line naming its readers, and has these sections:
 - What changed (grouped)
 - Verified locally (a table of real results)
 - Not verified
