@@ -35,6 +35,7 @@ public static class DatabaseSetup
         builder.Services.AddOptions<SeedOptions>().Bind(builder.Configuration.GetSection(SeedOptions.Section));
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddScoped<CatalogSeeder>();
+        builder.Services.AddScoped<DemoUserSeeder>();
 
         builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database", tags: ["ready"]);
 
@@ -55,6 +56,7 @@ public static class DatabaseSetup
         if (scope.ServiceProvider.GetRequiredService<IOptions<SeedOptions>>().Value.Enabled)
         {
             await scope.ServiceProvider.GetRequiredService<CatalogSeeder>().SeedAsync();
+            await scope.ServiceProvider.GetRequiredService<DemoUserSeeder>().SeedAsync();
         }
     }
 }
