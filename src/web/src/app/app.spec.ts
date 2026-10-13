@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
 import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
@@ -13,6 +15,8 @@ describe('App shell', () => {
       providers: [
         provideRouter(routes, withComponentInputBinding()),
         { provide: TitleStrategy, useClass: AppTitleStrategy },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     });
   });
@@ -51,6 +55,8 @@ describe('Routes', () => {
       providers: [
         provideRouter(routes, withComponentInputBinding()),
         { provide: TitleStrategy, useClass: AppTitleStrategy },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     });
   });

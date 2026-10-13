@@ -1,5 +1,6 @@
 import { A11yModule } from '@angular/cdk/a11y';
 import { BreakpointObserver } from '@angular/cdk/layout';
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import {
   Component,
   ElementRef,
@@ -12,6 +13,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
+import { SessionStore } from '../auth/session.store';
 import { ThemeService } from '../theme/theme.service';
 
 interface NavLink {
@@ -25,7 +27,7 @@ const desktopQuery = '(min-width: 48rem)';
 
 @Component({
   selector: 'app-site-header',
-  imports: [A11yModule, RouterLink, RouterLinkActive],
+  imports: [A11yModule, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, RouterLinkActive],
   templateUrl: './site-header.html',
   host: {
     '(document:keydown.escape)': 'closeMenu(true)',
@@ -33,6 +35,8 @@ const desktopQuery = '(min-width: 48rem)';
 })
 export class SiteHeader {
   protected readonly theme = inject(ThemeService);
+  protected readonly session = inject(SessionStore);
+  private readonly router = inject(Router);
   protected readonly menuOpen = signal(false);
   private readonly menuButton = viewChild.required<ElementRef<HTMLButtonElement>>('menuButton');
   private readonly mobileMenu = viewChild<ElementRef<HTMLElement>>('mobileMenu');
@@ -46,8 +50,8 @@ export class SiteHeader {
   ];
 
   constructor() {
-    inject(Router)
-      .events.pipe(
+    this.router.events
+      .pipe(
         filter((event) => event instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
@@ -61,6 +65,21 @@ export class SiteHeader {
           this.menuOpen.set(false);
         }
       });
+  }
+
+  protected initials(name: string): string {
+    return name
+      .split(/\s+/)
+      .filter((part) => part.length > 0)
+      .slice(0, 2)
+      .map((part) => part[0]!.toUpperCase())
+      .join('');
+  }
+
+  protected async signOut(): Promise<void> {
+    this.menuOpen.set(false);
+    await this.session.signOut();
+    await this.router.navigateByUrl('/');
   }
 
   protected toggleMenu(): void {
