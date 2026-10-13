@@ -75,13 +75,18 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **Why:** The modern Angular defaults are less code, with no extra dependency for two small shared stores.
 - **Alternatives:** NgRx SignalStore (a fine fit, but one more dependency to justify).
 - **Trade-offs:** No devtools time travel.
+- **Verified at M01 (2026-10-13):** `ng new` with CLI 22.2.0 (zoneless, Vitest, Tailwind). Exact pins: Angular 22.2.0, TypeScript 6.0.3 (the major Angular 22 installs), RxJS 7.8.2. The scaffold's `^` ranges resolved to 22.2.2 (5 days old), so versions are now exact. The generated tsconfig did **not** enable `strict`, so `strict`, `noUncheckedIndexedAccess`, `strictTemplates`, `strictStandalone` and extended diagnostics as errors are now set explicitly.
 
-## D007: UI: Tailwind CSS v4 plus Angular CDK, not Material or Bootstrap (pending, confirmed at M01)
+## D007: UI: Tailwind CSS v4 plus Angular CDK, not Material or Bootstrap
 - **Date:** 2026-10-13
 - **Decision:** Tailwind CSS v4 with design tokens as CSS variables (theme switching); Angular CDK for overlays, focus trap, a11y utilities and stepper behaviour. If `@angular/aria` is stable at M01, use it for headless accessible widgets.
 - **Why:** v1 combined Material and Bootstrap and looked generic. Tailwind gives a distinctive, consistent look with a small CSS output, and CDK covers the hard accessibility parts.
 - **Alternatives:** Angular Material 3 (fastest accessible widgets, but a recognizably "Material" look); PrimeNG (heavy).
 - **Trade-offs:** We own the visual components, so accessibility must be tested (axe and keyboard checks every milestone).
+- **Confirmed at M01 (2026-10-13):**
+  - Tailwind 4.3.3 via PostCSS (the CLI's `--style tailwind` setup); `@angular/cdk` 22.2.0.
+  - Theme tokens are CSS variables mapped into Tailwind with `@theme inline`, so utilities such as `bg-surface` follow the active theme.
+  - `@angular/aria` 22.2.0 exists but is not adopted yet. M01 only needed the CDK focus trap; re-evaluate it in M04 for the filter widgets.
 
 ## D008: One deployable: the API serves the built SPA (same origin)
 - **Date:** 2026-10-13
@@ -119,6 +124,10 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - One Playwright E2E flow against the production Docker image.
 - **Why:** Tests against a real Postgres catch query, constraint and concurrency bugs that an in-memory provider hides.
 - **Trade-offs:** Integration tests need Docker (available locally; available on GitHub-hosted Ubuntu runners).
+- **Verified at M01 (2026-10-13):**
+  - xUnit v3 4.0.1 runs on Microsoft.Testing.Platform. The .NET 10 SDK refuses the VSTest path for it, so `global.json` opts `dotnet test` into MTP, and `Microsoft.NET.Test.Sdk` / `xunit.runner.visualstudio` are not used.
+  - Vitest 5.0.2 with jsdom 30.1.1 is the CLI's default runner (`--test-runner` default `vitest`).
+  - Testcontainers comes in M02 (candidate 4.15.0, published 2026-09-06).
 
 ## D012: Money and currency
 - **Date:** 2026-10-13
@@ -177,3 +186,21 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **False positive handled:** the Stripe-style placeholder in `.env.example` (commit 159459b) is listed in `.gitleaksignore` by fingerprint. The placeholders are now empty values. History was not rewritten because no real secret was involved.
 - **Markdown indentation:** `.editorconfig` unsets indentation rules for `*.md`, because nested items under numbered lists use 3 spaces.
 - **Trade-offs:** Version bumps are manual (update the version and checksum together). Dependabot can be added later for `actions/*`.
+
+## D019: M01 toolchain and conventions
+- **Date:** 2026-10-13
+- **Versions** (all at least two weeks old on 2026-10-13; NuGet and npm registries queried that day):
+  - **Repository and runtime:** .NET SDK 10.0.401 (`global.json`, `rollForward: latestFeature`), runtime 10.0.12, Central Package Management.
+  - **API packages:** `Microsoft.AspNetCore.OpenApi` 10.0.12, `Scalar.AspNetCore` 2.17.11 (2.18.0 was too new).
+  - **Test packages:** `Microsoft.AspNetCore.Mvc.Testing` 10.0.12, `xunit.v3` 4.0.1.
+  - **Web tooling:** ESLint 10.11.0, `@eslint/js` 10.0.1, `typescript-eslint` 8.71.0, `angular-eslint` 22.5.0, Prettier 3.9.9, PostCSS 8.5.28.
+  - **Database and CI:** PostgreSQL image `postgres:18.6-alpine` (published 2026-09-21); CI actions `setup-dotnet` v6.0.0, `setup-node` v7.0.0 (v7.1.0 too new), `cache` v6.1.0, all SHA-pinned.
+- **Analyzers:**
+  - `AnalysisLevel` latest-recommended, `EnforceCodeStyleInBuild` and `TreatWarningsAsErrors` apply locally too, not just in CI, so a green local build means a green CI build.
+  - CA1707 (underscores in member names) is disabled for `tests/**` only, because test names read as sentences.
+- **Dev database port 5433:** port 5432 was already taken on the dev machine by a local PostgreSQL. 5433 avoids the clash and is configurable through `POSTGRES_PORT`.
+- **Mobile-menu focus:**
+  - Focus is managed explicitly: on open, the first link is focused after render; on close, focus returns to the menu button. The CDK trap only contains Tab.
+  - `cdkTrapFocusAutoCapture` was removed because, on destroy, it restored focus to whatever was focused when the menu opened. The browser pass caught this; the regression test is in `site-header.spec.ts`.
+- **Browser verification until M13:** Playwright 1.63.0 with `@axe-core/playwright`, run from a scratch folder outside the repo. M13 adds the committed Playwright suite.
+- **Deferred:** startup validation of required configuration starts in M02 with the first required setting (the connection string). M01 has no required settings.

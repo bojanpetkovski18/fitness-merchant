@@ -42,7 +42,31 @@ Dockerfile, docker-compose.yml, FitnessMerchant.slnx
 ## Commands
 Fill this in only after a command has actually been run and verified. Format: command, then what it does, then the date verified.
 
-_None verified yet (Phase 0)._
+All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.0, Docker 29.8.2. Run from the repo root unless a directory is given.
+
+**One-time setup**
+- `cp .env.example .env`: local settings; `.env` is git-ignored.
+- `cd src/web && npm ci`: installs the exact locked web dependencies.
+
+**Database (dev)**
+- `docker compose -f docker-compose.dev.yml up -d`: starts PostgreSQL 18.6 on `127.0.0.1:5433` (healthcheck included).
+- `docker compose -f docker-compose.dev.yml ps`: shows status; wait for `(healthy)`.
+- `docker compose -f docker-compose.dev.yml down`: stops it and keeps the data volume.
+
+**API** (`src/api/FitnessMerchant.Api`)
+- `dotnet build FitnessMerchant.slnx`: builds everything; warnings are errors.
+- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`).
+- `dotnet run --project src/api/FitnessMerchant.Api`: runs the API on `http://localhost:5080`. In Development, API docs are at `/scalar` and `/openapi/v1.json`.
+
+**Web** (`src/web`)
+- `npm start`: dev server on `http://localhost:4200`, proxying `/api` and `/health` to the API.
+- `npm run lint`: ESLint, including Angular template accessibility rules.
+- `npm run format:check` / `npm run format`: Prettier check / fix.
+- `npm run test:ci`: Vitest component tests, single run. `npm test` runs in watch mode.
+- `npm run build`: production build to `src/web/dist/web`.
+
+**CI**
+- `.github/workflows/ci.yml` runs the same commands, plus a gitleaks history scan, actionlint and editorconfig-checker.
 
 ## Working rules
 - **One milestone at a time.**
