@@ -6,7 +6,7 @@ Estimates are rough focused-work hours for agent and owner together, including r
 |---|---|---|---|---|---|---|
 | P0 | Project setup (spec, rules, plans, CI) | `#0000-project-setup` | 2 h | done | 2026-10-13 | PR #1 merged; CI green (secret scan, repo lint) |
 | M01 | Skeleton, CI, app shell | `#0001-solution-skeleton-ci-and-app-shell` | 6 h | done | 2026-10-13 | PR #2 merged; CI green (4 jobs). 7 API + 12 web tests; 78/78 browser checks |
-| M02 | Data model and seed data | `#0002-catalog-schema-seed-data-and-artwork` | 6 h | in progress | none | Includes the original SVG artwork |
+| M02 | Data model and seed data | `#0002-catalog-schema-seed-data-and-artwork` | 6 h | in review | 2026-10-13 | 57 tests (36 unit, 21 integration with Testcontainers); seeded dev DB: 8 categories, 6 brands, 62 products, 68 images |
 | M03 | Authentication | `#0003-cookie-auth-identity-roles-and-csrf` | 6 h | todo | none | |
 | M04 | Catalog (API + storefront) | `#0004-catalog-search-filters-and-storefront-pages` | 8 h | todo | none | |
 | M05 | Cart (server + guest merge) | `#0005-server-cart-with-guest-cart-merge` | 6 h | todo | none | |
@@ -25,6 +25,8 @@ Every number cited in the README or docs must appear here, with its method, mach
 
 | Metric | Value | Method | Machine | Date |
 |---|---|---|---|---|
+| .NET test suite, full run (57 tests incl. Testcontainers) | about 12 s (11.2 s and 12.2 s in two runs) | `dotnet test --solution FitnessMerchant.slnx --no-build`; `time` and the MTP summary | M1 | 2026-10-13 |
+| Seed artwork size | 68 images, 60 kB total | `pg_size_pretty(sum(size_bytes))` on the seeded dev DB | M1 | 2026-10-13 |
 | Web production build, initial bundle (scaffold + shell only) | 274.85 kB raw / 74.75 kB estimated transfer | `npm run build` output (Angular CLI estimate, not a network measurement) | M1 | 2026-10-13 |
 
 Machines:
@@ -36,7 +38,9 @@ Deferred by the owner. Re-check them when relevant, and in M12.
 | # | Issue | Found | Plan |
 |---|---|---|---|
 | K1 | **Production CSP vs Angular's critical-CSS inlining.** The production `index.html` contains an inline `<script>` (switches the stylesheet from `media="print"` to `all`) and an inline `<style>`. The API's CSP (`script-src 'self'; style-src 'self'`) will block both once the API serves the SPA, so the full stylesheet would never apply. Not visible on the dev server (no CSP). | M01, by inspecting `dist/web/browser/index.html` | Fix and verify in M13 when the API serves the build: Angular `security.autoCsp` (hashes) or `inlineCritical: false`, plus a nonce or hash strategy for component styles. |
+| K3 | On the very first migration of an empty database, EF Core logs one `fail:` line (it queries `__EFMigrationsHistory` before creating it). Harmless; only on first startup. | M02 | Leave unless it confuses log alerting after deployment (M14). |
+| K4 | One full test run took 16 min instead of about 12 s; not reproducible (3 later runs: 11–12 s, each test under 0.4 s except a deliberate 2 s timeout). Likely a Docker/Testcontainers stall on the dev machine. | M02 | Watch CI durations; the job has a 15-minute timeout. |
 | K2 | npm 11 skipped install scripts for `lmdb` and `msgpackr-extract` (optional native helpers for Angular's build cache). Build, tests and dev server work without them. | M01 | Leave as is unless builds become slow; approving scripts is a supply-chain decision for the owner. |
 
 ## Next step
-The owner reviews and merges the M01 PR (`#0001-solution-skeleton-ci-and-app-shell`). Then M02 (catalog schema, seed data and artwork) starts on `#0002-catalog-schema-seed-data-and-artwork`.
+The owner reviews and merges the M02 PR (`#0002-catalog-schema-seed-data-and-artwork`). Then M03 (cookie auth, Identity, roles and CSRF) starts on `#0003-cookie-auth-identity-roles-and-csrf`.
