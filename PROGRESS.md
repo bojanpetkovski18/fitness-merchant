@@ -5,8 +5,8 @@ Estimates are rough focused-work hours for agent and owner together, including r
 | # | Milestone | Branch | Estimate | Status | Verified on | Notes |
 |---|---|---|---|---|---|---|
 | P0 | Project setup (spec, rules, plans, CI) | `#0000-project-setup` | 2 h | done | 2026-10-13 | PR #1 merged; CI green (secret scan, repo lint) |
-| M01 | Skeleton, CI, app shell | `#0001-solution-skeleton-ci-and-app-shell` | 6 h | in review | 2026-10-13 | 7 API + 12 web tests; 78/78 browser checks (3 widths × 2 themes, keyboard, axe, console) |
-| M02 | Data model and seed data | `#0002-catalog-schema-seed-data-and-artwork` | 6 h | todo | none | Includes the original SVG artwork |
+| M01 | Skeleton, CI, app shell | `#0001-solution-skeleton-ci-and-app-shell` | 6 h | done | 2026-10-13 | PR #2 merged; CI green (4 jobs). 7 API + 12 web tests; 78/78 browser checks |
+| M02 | Data model and seed data | `#0002-catalog-schema-seed-data-and-artwork` | 6 h | in progress | none | Includes the original SVG artwork |
 | M03 | Authentication | `#0003-cookie-auth-identity-roles-and-csrf` | 6 h | todo | none | |
 | M04 | Catalog (API + storefront) | `#0004-catalog-search-filters-and-storefront-pages` | 8 h | todo | none | |
 | M05 | Cart (server + guest merge) | `#0005-server-cart-with-guest-cart-merge` | 6 h | todo | none | |
