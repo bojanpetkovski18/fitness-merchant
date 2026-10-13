@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/api/FitnessMerchant.Api/FitnessMerchant.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FitnessMerchant.Api.IntegrationTests/FitnessMerchant.Api.IntegrationTests.csproj" />
+    <Project Path="tests/FitnessMerchant.Api.UnitTests/FitnessMerchant.Api.UnitTests.csproj" />
+  </Folder>
+</Solution>

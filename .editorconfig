@@ -19,6 +19,10 @@ csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
 
+[tests/**.cs]
+# Test names read as sentences: Unknown_route_returns_problem_details.
+dotnet_diagnostic.CA1707.severity = none
+
 [*.{csproj,props,targets,slnx,xml}]
 indent_size = 2
 
