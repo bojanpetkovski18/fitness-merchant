@@ -58,6 +58,21 @@ export class SessionStore {
     return response.user;
   }
 
+  async updateProfile(displayName: string): Promise<SessionUser | null> {
+    const response = await firstValueFrom(
+      this.http.put<SessionResponse>('/api/account/profile', { displayName }),
+    );
+    this.currentUser.set(response.user);
+    return response.user;
+  }
+
+  /** Other sessions end on their next request; this one is re-issued by the server (D025). */
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>('/api/account/password', { currentPassword, newPassword }),
+    );
+  }
+
   async signOut(): Promise<void> {
     try {
       await firstValueFrom(this.http.post<void>('/api/auth/sign-out', null));

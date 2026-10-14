@@ -73,10 +73,31 @@ export const routes: Routes = [
       import('./features/orders/order-pages').then((m) => m.OrderConfirmationPage),
   },
   {
-    path: 'account/orders',
-    title: 'My orders',
+    path: 'account',
     canActivate: [authGuard],
-    loadComponent: () => import('./features/orders/order-pages').then((m) => m.OrdersPage),
+    loadComponent: () => import('./features/account/account-layout').then((m) => m.AccountLayout),
+    children: [
+      {
+        path: '',
+        title: 'Profile',
+        loadComponent: () => import('./features/account/profile-page').then((m) => m.ProfilePage),
+      },
+      {
+        path: 'password',
+        title: 'Password',
+        loadComponent: () => import('./features/account/password-page').then((m) => m.PasswordPage),
+      },
+      {
+        path: 'orders',
+        title: 'My orders',
+        loadComponent: () => import('./features/orders/order-pages').then((m) => m.OrdersPage),
+      },
+      {
+        path: 'orders/:number',
+        title: 'Order details',
+        loadComponent: () => import('./features/orders/order-pages').then((m) => m.OrderDetailPage),
+      },
+    ],
   },
   {
     path: 'sign-in',
@@ -89,13 +110,6 @@ export const routes: Routes = [
     title: 'Create account',
     canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/register-page').then((m) => m.RegisterPage),
-  },
-  planned('account', 'My account', 'M08', authGuard),
-  {
-    path: 'account/orders/:number',
-    title: 'Order details',
-    canActivate: [authGuard],
-    loadComponent: () => import('./features/orders/order-pages').then((m) => m.OrderDetailPage),
   },
   planned('admin', 'Admin', 'M09', adminGuard),
   planned('about', 'About', 'M12'),
