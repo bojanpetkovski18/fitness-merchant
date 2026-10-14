@@ -272,3 +272,31 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - Reactive Forms (stable) rather than experimental Signal Forms.
   - CDK Menu for the account menu, with its overlay CSS added to the build.
 - **Analyzers:** CA1861 (constant array arguments) is disabled for tests, like CA1707.
+
+## D022: Catalog API and storefront (M04)
+- **Date:** 2026-10-14
+- **List queries:**
+  - One handler per query, read-only (`AsNoTracking`) projections.
+  - Filters and sorting run on the entity and the projection comes last, because EF cannot translate filters over a constructor-built record. Found by a 500 in the smoke test.
+  - Each list request runs exactly one `COUNT` and one paged `SELECT`, verified in the EF SQL log.
+- **Sale price in SQL:** price filters and sorting use the sale price computed in SQL (`round(price * (100 - discount) / 100, 2)`); PostgreSQL rounds numeric half away from zero, like the domain rule. An integration test compares every API sale price with `Pricing.SalePrice`.
+- **Validation:** every query parameter is parsed as a string and validated, returning 400 problem details that name the field. Sort keys come from an allow-list, and every sort ends with the ID so paging is stable.
+- **Search:**
+  - `ILIKE` on product and brand names with LIKE wildcards escaped, plus trigram `word_similarity` ≥ 0.45 for terms of 4+ characters, ranked by similarity.
+  - Thresholds were measured on the seed data: "protien" 0.50, "creatin" 0.88; short terms such as "bar" were too noisy.
+  - Trigram functions ship in the main Npgsql provider; the old Trigrams plugin package stopped at 5.0.
+- **Stock status:** in-stock above 5, low-stock 1–5, out-of-stock 0. `maxOrderQuantity` is stock capped at 10 (SPEC section 5). Enums are serialized as kebab-case strings.
+- **Images:** a strong ETag (the content hash) and `Cache-Control: public, max-age=31536000, immutable`; If-None-Match gets a 304. The header is set only for found images, after a first version would also have cached 404s.
+- **Frontend data loading:**
+  - `httpResource` (`@publicApi 22.0`, stable) for every section, so each has independent loading, error and success states.
+  - **`value()` throws while a resource is in its error state**, so reads outside a `hasValue()` branch go through guarded computeds. A component test caught this; it would otherwise have crashed exactly the error states it should show.
+- **Listing state:**
+  - Kept entirely in the URL (a pure, unit-tested parse/serialize module). Malformed URL values fall back to defaults; the API still validates.
+  - Search is debounced (350 ms) and uses `replaceUrl`, so typing adds no history entries (verified: 0 entries for 7 keystrokes).
+  - Filter changes reset to page 1.
+- **Layout and accessibility:**
+  - Filters sit in a sidebar from 768 px; below that a CDK Dialog drawer with `ariaModal: true` (CDK no longer sets it by default), focus inside, Escape and focus restore.
+  - Product cards have one link stretched over the card; screen readers get price, discount and rating as text.
+  - The first 4 cards of a grid load eagerly with `fetchpriority=high` (Angular NG0913 flagged the lazy LCP image).
+- **"Top rated" on Home** is hidden until products have reviews (M11), rather than ranking unrated products.
+- **Focus management fix (amends D019):** the shell moves focus to `<main>` only when the URL *path* changes. Query-only navigations (filters, sort, paging) keep focus where the user is. Before the fix, ticking a filter sent keyboard users to the top of the content and broke the drawer's focus restore. Regression test in `app.spec.ts`.

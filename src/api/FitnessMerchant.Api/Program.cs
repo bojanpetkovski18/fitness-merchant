@@ -1,5 +1,8 @@
 using FitnessMerchant.Api.Common;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FitnessMerchant.Api.Features.Auth;
+using FitnessMerchant.Api.Features.Catalog;
 using FitnessMerchant.Api.Features.Health;
 using FitnessMerchant.Api.Features.Images;
 using FitnessMerchant.Api.Infrastructure.Data;
@@ -20,12 +23,16 @@ else
 }
 
 builder.Services.AddApiProblemDetails();
+// Enums travel as kebab-case strings: "in-stock", "supplements".
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower)));
 builder.Services.AddValidation();
 builder.Services.AddOpenApi();
 builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.AddAppDatabase();
 builder.AddAppAuth();
 builder.Services.AddAuthFeature();
+builder.Services.AddCatalogFeature();
 builder.Services.AddScoped<GetImageQuery>();
 
 var app = builder.Build();
@@ -47,6 +54,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthEndpoints();
 app.MapImageEndpoints();
 app.MapAuthEndpoints();
+app.MapCatalogEndpoints();
 
 // Test seam: integration tests register extra endpoints (e.g. an admin-only probe). Production registers none.
 foreach (var mapper in app.Services.GetServices<IEndpointMapper>())
