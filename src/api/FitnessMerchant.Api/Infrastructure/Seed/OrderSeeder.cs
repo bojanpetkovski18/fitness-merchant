@@ -71,15 +71,21 @@ public sealed partial class OrderSeeder(AppDbContext db, TimeProvider time, ILog
                 CreatedAt = now.AddDays(-120 - index),
             });
         }).ToList();
-        db.Users.AddRange(users.Select(u => u.User));
-        db.UserRoles.AddRange(users.Select(u => new IdentityUserRole<Guid> { UserId = u.User.Id, RoleId = customerRole }));
+        // Reuse seed customers that already exist (e.g. after an order reset), so re-seeding cannot collide.
+        var existing = await db.Users.Where(u => users.Select(x => x.User.Id).Contains(u.Id)).Select(u => u.Id).ToListAsync(cancellationToken);
+        var newUsers = users.Where(u => !existing.Contains(u.User.Id)).Select(u => u.User).ToList();
+        db.Users.AddRange(newUsers);
+        db.UserRoles.AddRange(newUsers.Select(u => new IdentityUserRole<Guid> { UserId = u.Id, RoleId = customerRole }));
 
         // Draw the orders first, then number them in date order so FM-000001 is the oldest.
         var drafts = Enumerable.Range(0, OrderCount).Select(i =>
         {
-            var placedAt = now.AddDays(-random.Next(1, 90)).AddMinutes(-random.Next(0, 24 * 60));
+            // The newest few are recent enough to still await shipping, so staff have orders to process.
+            var daysAgo = i >= OrderCount - 6 ? random.Next(0, 2) : random.Next(3, 90);
+            var placedAt = now.AddDays(-daysAgo).AddMinutes(-random.Next(30, 20 * 60));
             var picks = products.OrderBy(_ => random.Next()).Take(random.Next(1, 4)).ToList();
-            var quantities = picks.Select(_ => random.Next(1, 4)).ToList();
+            // Nobody buys three treadmills: big-ticket items come one at a time.
+            var quantities = picks.Select(p => p.SalePrice > 200m ? 1 : random.Next(1, 4)).ToList();
             return (Index: i, PlacedAt: placedAt, Picks: picks, Quantities: quantities, Customer: users[i % users.Count], Roll: random.NextDouble());
         }).OrderBy(d => d.PlacedAt).ToList();
 

@@ -1,0 +1,333 @@
+<div class="mx-auto max-w-7xl px-4 py-8 md:py-10">
+  <h1 class="fm-display text-4xl md:text-5xl">Checkout</h1>
+
+  @let c = cart.cart();
+  @if (cart.status() === 'ready' && c.lines.length === 0 && !submitting()) {
+    <div class="mt-8">
+      <app-empty-state title="Your cart is empty" message="Add something before checking out.">
+        <a routerLink="/supplements" class="rounded-md bg-accent px-4 py-2 font-bold text-on-accent"
+          >Shop supplements</a
+        >
+      </app-empty-state>
+    </div>
+  } @else {
+    <ol aria-label="Checkout steps" class="mt-6 flex flex-wrap gap-2 text-sm font-semibold">
+      @for (s of [1, 2, 3]; track s) {
+        <li
+          [attr.aria-current]="step() === s ? 'step' : null"
+          class="rounded-full border px-3 py-1"
+          [class]="
+            step() === s
+              ? 'border-accent bg-accent text-on-accent'
+              : step() > s
+                ? 'border-border text-fg'
+                : 'border-border text-muted'
+          "
+        >
+          {{ s }}. {{ s === 1 ? 'Shipping' : s === 2 ? 'Payment' : 'Review' }}
+          @if (step() > s) {
+            <span class="sr-only">(completed)</span>
+          }
+        </li>
+      }
+    </ol>
+
+    <div id="checkout-alert" tabindex="-1" aria-live="assertive" class="outline-none">
+      @if (alert(); as a) {
+        <p
+          role="alert"
+          class="mt-6 rounded-md border border-danger/50 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger"
+        >
+          {{ a.message }}
+          @if (a.link; as link) {
+            <a [routerLink]="link.url" class="ml-1 underline underline-offset-4">{{
+              link.label
+            }}</a>
+          }
+        </p>
+      }
+    </div>
+
+    <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
+      <div>
+        <!-- Step 1: shipping -->
+        @if (step() === 1) {
+          <form
+            [formGroup]="shipping"
+            (ngSubmit)="continueFrom(1)"
+            novalidate
+            aria-labelledby="step-1-heading"
+          >
+            <h2 id="step-1-heading" tabindex="-1" class="fm-display text-2xl outline-none">
+              Shipping address
+            </h2>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+              @for (
+                f of [
+                  { name: 'fullName', label: 'Full name', auto: 'name', span: true },
+                  { name: 'line1', label: 'Address', auto: 'address-line1', span: true },
+                  {
+                    name: 'line2',
+                    label: 'Apartment, suite (optional)',
+                    auto: 'address-line2',
+                    span: true,
+                  },
+                  { name: 'city', label: 'City', auto: 'address-level2', span: false },
+                  { name: 'postalCode', label: 'Postal code', auto: 'postal-code', span: false },
+                  { name: 'phone', label: 'Phone', auto: 'tel', span: false },
+                  { name: 'email', label: 'Email', auto: 'email', span: false },
+                ];
+                track f.name
+              ) {
+                @let err = shippingError($any(f.name), f.label);
+                <div [class.sm:col-span-2]="f.span">
+                  <label [for]="'ship-' + f.name" class="block text-sm font-semibold">{{
+                    f.label
+                  }}</label>
+                  <input
+                    [id]="'ship-' + f.name"
+                    [formControlName]="f.name"
+                    [type]="f.name === 'email' ? 'email' : f.name === 'phone' ? 'tel' : 'text'"
+                    [attr.autocomplete]="f.auto"
+                    [attr.aria-invalid]="err ? 'true' : null"
+                    [attr.aria-describedby]="err ? 'ship-' + f.name + '-error' : null"
+                    class="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2.5 aria-invalid:border-danger"
+                  />
+                  @if (err) {
+                    <p [id]="'ship-' + f.name + '-error'" class="mt-1 text-sm text-danger">
+                      {{ err }}
+                    </p>
+                  }
+                </div>
+              }
+              @let countryErr = shippingError('country', 'Country');
+              <div>
+                <label for="ship-country" class="block text-sm font-semibold">Country</label>
+                <select
+                  id="ship-country"
+                  formControlName="country"
+                  autocomplete="country-name"
+                  [attr.aria-invalid]="countryErr ? 'true' : null"
+                  [attr.aria-describedby]="countryErr ? 'ship-country-error' : null"
+                  class="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2.5 aria-invalid:border-danger"
+                >
+                  <option value="" disabled>Choose a country</option>
+                  @for (country of countries; track country) {
+                    <option [value]="country">{{ country }}</option>
+                  }
+                </select>
+                @if (countryErr) {
+                  <p id="ship-country-error" class="mt-1 text-sm text-danger">{{ countryErr }}</p>
+                }
+              </div>
+            </div>
+            <button
+              type="submit"
+              class="mt-6 rounded-md bg-accent px-6 py-3 font-bold text-on-accent hover:bg-accent-strong"
+            >
+              Continue to payment
+            </button>
+          </form>
+        }
+
+        <!-- Step 2: payment -->
+        @if (step() === 2) {
+          <form
+            [formGroup]="payment"
+            (ngSubmit)="continueFrom(2)"
+            novalidate
+            aria-labelledby="step-2-heading"
+          >
+            <h2 id="step-2-heading" tabindex="-1" class="fm-display text-2xl outline-none">
+              Payment
+            </h2>
+            <div
+              id="test-cards"
+              class="mt-4 rounded-md border border-border bg-surface-2 px-4 py-3 text-sm"
+            >
+              <p class="font-bold">Demo store: no real payments.</p>
+              <p class="mt-1 text-muted">
+                Use <span class="font-mono text-fg">4242 4242 4242 4242</span> to pay, or
+                <span class="font-mono text-fg">4000 0000 0000 0002</span> to see a decline. Any
+                future expiry date and any CVC.
+              </p>
+            </div>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+              @let numErr = paymentError('cardNumber', 'Card number');
+              <div class="sm:col-span-2">
+                <label for="pay-cardNumber" class="block text-sm font-semibold">Card number</label>
+                <input
+                  id="pay-cardNumber"
+                  formControlName="cardNumber"
+                  inputmode="numeric"
+                  autocomplete="cc-number"
+                  [attr.aria-invalid]="numErr ? 'true' : null"
+                  [attr.aria-describedby]="
+                    numErr ? 'pay-cardNumber-error test-cards' : 'test-cards'
+                  "
+                  class="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2.5 font-mono aria-invalid:border-danger"
+                />
+                @if (numErr) {
+                  <p id="pay-cardNumber-error" class="mt-1 text-sm text-danger">{{ numErr }}</p>
+                }
+              </div>
+              @let expErr = paymentError('expiry', 'Expiry date');
+              <div>
+                <label for="pay-expiry" class="block text-sm font-semibold">Expiry (MM/YY)</label>
+                <input
+                  id="pay-expiry"
+                  formControlName="expiry"
+                  inputmode="numeric"
+                  autocomplete="cc-exp"
+                  placeholder="MM/YY"
+                  [attr.aria-invalid]="expErr ? 'true' : null"
+                  [attr.aria-describedby]="expErr ? 'pay-expiry-error' : null"
+                  class="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2.5 aria-invalid:border-danger"
+                />
+                @if (expErr) {
+                  <p id="pay-expiry-error" class="mt-1 text-sm text-danger">{{ expErr }}</p>
+                }
+              </div>
+              @let cvcErr = paymentError('cvc', 'Security code');
+              <div>
+                <label for="pay-cvc" class="block text-sm font-semibold">Security code (CVC)</label>
+                <input
+                  id="pay-cvc"
+                  formControlName="cvc"
+                  inputmode="numeric"
+                  autocomplete="cc-csc"
+                  [attr.aria-invalid]="cvcErr ? 'true' : null"
+                  [attr.aria-describedby]="cvcErr ? 'pay-cvc-error' : null"
+                  class="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2.5 aria-invalid:border-danger"
+                />
+                @if (cvcErr) {
+                  <p id="pay-cvc-error" class="mt-1 text-sm text-danger">{{ cvcErr }}</p>
+                }
+              </div>
+              @let nameErr = paymentError('nameOnCard', 'Name on card');
+              <div class="sm:col-span-2">
+                <label for="pay-nameOnCard" class="block text-sm font-semibold">Name on card</label>
+                <input
+                  id="pay-nameOnCard"
+                  formControlName="nameOnCard"
+                  autocomplete="cc-name"
+                  [attr.aria-invalid]="nameErr ? 'true' : null"
+                  [attr.aria-describedby]="nameErr ? 'pay-nameOnCard-error' : null"
+                  class="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2.5 aria-invalid:border-danger"
+                />
+                @if (nameErr) {
+                  <p id="pay-nameOnCard-error" class="mt-1 text-sm text-danger">{{ nameErr }}</p>
+                }
+              </div>
+            </div>
+            <div class="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                class="rounded-md border border-border px-6 py-3 font-bold hover:bg-surface-2"
+                (click)="goTo(1)"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                class="rounded-md bg-accent px-6 py-3 font-bold text-on-accent hover:bg-accent-strong"
+              >
+                Review order
+              </button>
+            </div>
+          </form>
+        }
+
+        <!-- Step 3: review -->
+        @if (step() === 3) {
+          <section aria-labelledby="step-3-heading">
+            <h2 id="step-3-heading" tabindex="-1" class="fm-display text-2xl outline-none">
+              Review and place order
+            </h2>
+            @let a = shipping.getRawValue();
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+              <div class="rounded-xl border border-border bg-surface p-4 text-sm">
+                <h3 class="font-bold">Ship to</h3>
+                <p class="mt-1">
+                  {{ a.fullName }}<br />{{ a.line1 }}
+                  @if (a.line2) {
+                    <br />{{ a.line2 }}
+                  }
+                  <br />{{ a.postalCode }} {{ a.city }}<br />{{ a.country }}
+                </p>
+                <p class="mt-1 text-muted">{{ a.phone }} · {{ a.email }}</p>
+                <button
+                  type="button"
+                  class="mt-2 text-sm font-semibold text-accent underline underline-offset-4"
+                  (click)="goTo(1)"
+                >
+                  Change<span class="sr-only"> shipping address</span>
+                </button>
+              </div>
+              <div class="rounded-xl border border-border bg-surface p-4 text-sm">
+                <h3 class="font-bold">Pay with</h3>
+                <p class="mt-1">Card ending in {{ cardLast4() }}</p>
+                <button
+                  type="button"
+                  class="mt-2 text-sm font-semibold text-accent underline underline-offset-4"
+                  (click)="goTo(2)"
+                >
+                  Change<span class="sr-only"> payment details</span>
+                </button>
+              </div>
+            </div>
+            @if (cart.hasBlockingIssues()) {
+              <p class="mt-4 text-sm font-semibold text-danger">
+                Some items changed.
+                <a routerLink="/cart" class="underline underline-offset-4">Review your cart</a>
+                before placing the order.
+              </p>
+            }
+            <button
+              type="button"
+              class="mt-6 w-full rounded-md bg-accent px-6 py-3 text-lg font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60 sm:w-auto"
+              [disabled]="
+                submitting() ||
+                cart.status() !== 'ready' ||
+                cart.hasBlockingIssues() ||
+                c.lines.length === 0
+              "
+              (click)="placeOrder()"
+            >
+              {{ submitting() ? 'Placing order…' : 'Place order · ' + (c.total | currency: 'EUR') }}
+            </button>
+          </section>
+        }
+      </div>
+
+      <aside
+        aria-labelledby="checkout-summary-heading"
+        class="rounded-xl border border-border bg-surface p-5 lg:sticky lg:top-20"
+      >
+        <h2 id="checkout-summary-heading" class="fm-display text-xl">Order summary</h2>
+        <ul class="mt-4 space-y-2 text-sm">
+          @for (line of c.lines; track line.productId) {
+            <li class="flex justify-between gap-3">
+              <span class="min-w-0">{{ line.quantity }} × {{ line.name }}</span>
+              <span class="shrink-0">{{ line.lineTotal | currency: 'EUR' }}</span>
+            </li>
+          }
+        </ul>
+        <dl class="mt-4 space-y-1 border-t border-border pt-3 text-sm">
+          <div class="flex justify-between">
+            <dt>Subtotal</dt>
+            <dd>{{ c.subtotal | currency: 'EUR' }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt>Shipping</dt>
+            <dd>{{ c.shipping === 0 ? 'Free' : (c.shipping | currency: 'EUR') }}</dd>
+          </div>
+          <div class="flex justify-between pt-1 text-base font-black">
+            <dt>Total</dt>
+            <dd>{{ c.total | currency: 'EUR' }}</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  }
+</div>
