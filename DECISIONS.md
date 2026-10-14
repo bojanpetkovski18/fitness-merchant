@@ -300,3 +300,33 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - The first 4 cards of a grid load eagerly with `fetchpriority=high` (Angular NG0913 flagged the lazy LCP image).
 - **"Top rated" on Home** is hidden until products have reviews (M11), rather than ranking unrated products.
 - **Focus management fix (amends D019):** the shell moves focus to `<main>` only when the URL *path* changes. Query-only navigations (filters, sort, paging) keep focus where the user is. Before the fix, ticking a filter sent keyboard users to the top of the content and broke the drawer's focus restore. Regression test in `app.spec.ts`.
+
+## D023: Cart (M05)
+- **Date:** 2026-10-14
+- **Schema:**
+  - One cart per user (unique `user_id`), created on the first write.
+  - `cart_items` keyed by (cart, product); quantity 1–10 enforced by a check constraint.
+  - Lines cascade with the cart, and with the product (only possible for never-ordered products, M09).
+- **Ownership:** every cart route resolves the user from the session (`ClaimsPrincipal.GetUserId()`); there is no cart ID in any route. Tested: another user's remove and clear calls leave a cart untouched.
+- **Concurrency:** writes are parameterized PostgreSQL `INSERT … ON CONFLICT` upserts (cart and line), so parallel adds cannot hit unique-key errors. Tested with 10 concurrent writes to one line.
+- **Pricing:**
+  - One `CartPricer` serves the stored cart and the guest quote: current sale prices, one product query per call.
+  - Per-line `issue`: `unavailable` and `out-of-stock` lines are excluded from totals; `exceeds-stock` lines are counted at what is buyable.
+  - Shipping follows `CartPricing` (domain, unit-tested at €59.99, €60.00 and €60.01).
+  - The 10-per-line cap moved from the catalog feature into the domain.
+- **Write rules:**
+  - `PUT` rejects archived or unknown products (404) and out-of-stock or over-stock quantities (409 with `maxQuantity`). It does not silently cap, so the UI can say why.
+  - **Merge is lenient** (sums, caps at min(10, stock), skips stale items), because guest data can be days old.
+- **Guest quote:** `POST /api/cart/quote` is anonymous and rate-limited (120 per minute per IP, `RateLimiting__QuotePermitLimit`), and stores nothing. Guests see real server totals without the browser ever computing money (D012).
+- **Frontend (refines D015):**
+  - `CartStore` keeps one interface over two backends.
+  - Guest localStorage holds only `{ productId, quantity }`; malformed entries are dropped on read.
+  - Signed-in changes are optimistic (quantities only; money stays as last priced) and roll back on error. Failed guest changes roll back the stored items too.
+  - Merging on sign-in and emptying on sign-out are driven by an effect on the session user.
+- **Accessibility:**
+  - Toasts use two live regions that always exist (polite and assertive); regions inserted later are often not announced, and `display: contents` can drop roles.
+  - The cart link's name carries the count ("Cart, 3 items"); the badge is `aria-hidden`.
+  - Steppers and remove buttons are named per product.
+  - Emptying the cart asks in a CDK `alertdialog` that starts on Cancel.
+  - Checkout is `aria-disabled` with a described reason while lines have issues.
+- **Test infrastructure:** the integration suite outgrew PostgreSQL's 100 connections (one pool per test database). Test connection strings now prune idle connections after about 2 s with pools of at most 10, and the test container allows 300 connections. Three consecutive green runs of about 17 s.

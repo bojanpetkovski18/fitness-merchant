@@ -9,7 +9,7 @@ Estimates are rough focused-work hours for agent and owner together, including r
 | M02 | Data model and seed data | `#0002-catalog-schema-seed-data-and-artwork` | 6 h | done | 2026-10-13 | PR #3 merged; CI green (API job 47 s incl. Testcontainers). 57 tests (36 unit, 21 integration with Testcontainers); seeded dev DB: 8 categories, 6 brands, 62 products, 68 images |
 | M03 | Authentication | `#0003-cookie-auth-identity-roles-and-csrf` | 6 h | done | 2026-10-13 | PR #4 merged; CI green. 72 API tests (36 unit, 36 integration) + 41 web tests; 42/42 browser checks; curl XSRF checks |
 | M04 | Catalog (API + storefront) | `#0004-catalog-search-filters-and-storefront-pages` | 8 h | done | 2026-10-14 | PR #5 merged; CI green. 151 API tests (incl. oracle-checked filters/sorts) + 56 web tests; 41/41 browser checks |
-| M05 | Cart (server + guest merge) | `#0005-server-cart-with-guest-cart-merge` | 6 h | in progress | none | |
+| M05 | Cart (server + guest merge) | `#0005-server-cart-with-guest-cart-merge` | 6 h | in review | 2026-10-14 | 178 API tests + 70 web tests; 32/32 browser checks (guest → sign-in merge → sign-out, SQL stock change, keyboard, axe) |
 | M06 | Checkout and orders (fake gateway) | `#0006-checkout-orders-and-fake-payment-gateway` | 8 h | todo | none | |
 | M07 | Stripe Checkout (test mode) | `#0007-stripe-checkout-test-mode-and-webhooks` | 6 h | todo | none | Needs the owner's Stripe test keys |
 | M08 | My account | `#0008-account-profile-password-and-order-history` | 4 h | todo | none | |
@@ -31,6 +31,8 @@ Every number cited in the README or docs must appear here, with its method, mach
 | .NET test suite after M04 (151 tests) | 18.3 s | `dotnet test --solution FitnessMerchant.slnx --no-build` (MTP summary) | M1 | 2026-10-14 |
 | Web initial bundle after M04 (catalog pages are lazy) | 440.58 kB raw / 113.61 kB estimated transfer | `npm run build` output (CLI estimate) | M1 | 2026-10-14 |
 | Filtered product list query (dev DB, 62 products) | 7 ms page query, 165 ms first count (cold) | EF Core `Executed DbCommand` log in Development, single request | M1 | 2026-10-13 |
+| .NET test suite after M05 (178 tests) | 17.0–17.5 s (3 runs) | `dotnet test --solution FitnessMerchant.slnx --no-build` (MTP summary) | M1 | 2026-10-14 |
+| Web initial bundle after M05 (adds cart store, toasts, CDK dialog) | 450.64 kB raw / 117.74 kB estimated transfer | `npm run build` output (CLI estimate) | M1 | 2026-10-14 |
 | Seed artwork size | 68 images, 60 kB total | `pg_size_pretty(sum(size_bytes))` on the seeded dev DB | M1 | 2026-10-13 |
 | Web production build, initial bundle (scaffold + shell only) | 274.85 kB raw / 74.75 kB estimated transfer | `npm run build` output (Angular CLI estimate, not a network measurement) | M1 | 2026-10-13 |
 
@@ -53,4 +55,4 @@ Deferred by the owner. Re-check them when relevant, and in M12.
 | K2 | npm 11 skipped install scripts for `lmdb` and `msgpackr-extract` (optional native helpers for Angular's build cache). Build, tests and dev server work without them. | M01 | Leave as is unless builds become slow; approving scripts is a supply-chain decision for the owner. |
 
 ## Next step
-The owner reviews and merges the M04 PR (`#0004-catalog-search-filters-and-storefront-pages`). Then M05 (server cart with guest cart merge) starts on `#0005-server-cart-with-guest-cart-merge`.
+The owner reviews and merges the M05 PR (`#0005-server-cart-with-guest-cart-merge`). Then M06 (checkout, orders and the fake payment gateway) starts on `#0006-checkout-orders-and-fake-payment-gateway`.
