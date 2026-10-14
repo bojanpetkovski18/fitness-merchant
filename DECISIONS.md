@@ -370,3 +370,14 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - One idempotency key per attempt.
   - The review step re-prices before showing "Place order · €total".
 - **Header fix:** signed-in at 768 px the account button overflowed by 73 px (M03 checked 768 px only as a guest). The display name now shows from 1024 px; initials and the accessible name always do.
+
+## D025: My account (M08)
+- **Old sessions end on a password change.**
+  - `ConfigureApplicationCookie` replaced `options.Events` (for the 401/403 API answers) and with it Identity's default `OnValidatePrincipal` hook. Old cookies therefore survived a security-stamp change. Found by a regression test written first and shown failing; the hook is now wired back explicitly.
+  - `SecurityStampValidatorOptions.ValidationInterval` is zero: every authenticated request looks the user up by primary key and compares stamps. The default (30 minutes) would leave a stolen session alive that long after the owner changes the password. Cost: one indexed query per authenticated request, and the session cookie is re-issued on those responses.
+  - Verified in tests (old cookie gets 401, `/me` answers guest) and in two real browser contexts.
+- **Password change:** `UserManager.ChangePasswordAsync` (rotates the stamp), then `RefreshSignInAsync` so this browser stays signed in, and a new XSRF token. A wrong current password is a 400 on `currentPassword`; Identity's rules on `newPassword`. It shares the sign-in rate limit (`auth` policy): guessing the current password is the same attack as guessing it at sign-in.
+- **Profile:** only the display name is editable (2 to 50 characters after trimming, checked again in the handler because `StringLength` sees the untrimmed value). Email changes would need confirmation mail, which the demo does not send.
+- **Account area:** one layout with a `nav` landmark labelled "Account" (tabs on phones, a side list from `md`) around child routes: Profile, Password, Orders and an order's page. `aria-current="page"` on the exact section; on an order's page the Orders link gets `aria-current="true"` (inside the section, not the page itself).
+- **Order items link by the current slug.** The detail and cancel responses look up the ordered products: still active gives the current slug (M09 lets admins rename slugs), archived gives `productAvailable: false` and the UI shows the name as text with "(no longer sold)". Names and prices always come from the order snapshot.
+- **Confirm dialog:** gained an optional `dismissLabel`. Cancelling an order now offers "Keep order" / "Cancel order" instead of "Cancel" / "Cancel order".

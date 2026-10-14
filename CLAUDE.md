@@ -56,8 +56,9 @@ All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.
 
 **API** (`src/api/FitnessMerchant.Api`)
 - `dotnet build FitnessMerchant.slnx`: builds everything; warnings are errors.
-- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`). Integration tests start their own PostgreSQL container through Testcontainers, so Docker must be running; the dev database is not used. About 12 s on M1.
+- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`). Integration tests start their own PostgreSQL container through Testcontainers, so Docker must be running; the dev database is not used. About 25 s on M1 after M08 (263 tests).
 - `dotnet test --project tests/FitnessMerchant.Api.IntegrationTests --output Detailed`: one project with per-test timings.
+- `dotnet test --project tests/FitnessMerchant.Api.IntegrationTests -- --filter-class "*AccountTests"`: one test class (`--filter-method "*name*"` for one test; combining both filters matches nothing).
 - `dotnet run --project src/api/FitnessMerchant.Api`: runs the API on `http://localhost:5080`. In Development it reads the repo-root `.env`, applies migrations (`Database__MigrateOnStartup`) and seeds an empty catalog (`Seed__Enabled`). API docs are at `/scalar` and `/openapi/v1.json`. Health: `/health` (includes the DB) and `/health/live`.
 - `dotnet ef migrations add <Name> --project src/api/FitnessMerchant.Api --output-dir Infrastructure/Data/Migrations`: adds a migration. Review it with `dotnet ef migrations script --project src/api/FitnessMerchant.Api` (build first; `--no-build` uses the last build). A forgotten migration fails the test suite (`Model_matches_the_migrations`; EF also refuses `MigrateAsync`).
 - Re-seed the dev catalog: stop the API, run `docker compose -f docker-compose.dev.yml exec -T db psql -U fitness_merchant -d fitness_merchant -c "truncate products, brands, categories, images;"`, then start the API again.
@@ -66,7 +67,7 @@ All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.
 - `npm start`: dev server on `http://localhost:4200`, proxying `/api` and `/health` to the API.
 - `npm run lint`: ESLint, including Angular template accessibility rules.
 - `npm run format:check` / `npm run format`: Prettier check / fix.
-- `npm run test:ci`: Vitest component tests, single run. `npm test` runs in watch mode.
+- `npm run test:ci`: Vitest component tests, single run. `npm test` runs in watch mode. `npx ng test --watch=false --include src/app/shared/ui/confirm-dialog.spec.ts` runs one spec.
 - `npm run build`: production build to `src/web/dist/web`.
 
 **CI**
