@@ -9,8 +9,8 @@ Estimates are rough focused-work hours for agent and owner together, including r
 | M02 | Data model and seed data | `#0002-catalog-schema-seed-data-and-artwork` | 6 h | done | 2026-10-13 | PR #3 merged; CI green (API job 47 s incl. Testcontainers). 57 tests (36 unit, 21 integration with Testcontainers); seeded dev DB: 8 categories, 6 brands, 62 products, 68 images |
 | M03 | Authentication | `#0003-cookie-auth-identity-roles-and-csrf` | 6 h | done | 2026-10-13 | PR #4 merged; CI green. 72 API tests (36 unit, 36 integration) + 41 web tests; 42/42 browser checks; curl XSRF checks |
 | M04 | Catalog (API + storefront) | `#0004-catalog-search-filters-and-storefront-pages` | 8 h | done | 2026-10-14 | PR #5 merged; CI green. 151 API tests (incl. oracle-checked filters/sorts) + 56 web tests; 41/41 browser checks |
-| M05 | Cart (server + guest merge) | `#0005-server-cart-with-guest-cart-merge` | 6 h | in review | 2026-10-14 | 178 API tests + 70 web tests; 32/32 browser checks (guest → sign-in merge → sign-out, SQL stock change, keyboard, axe) |
-| M06 | Checkout and orders (fake gateway) | `#0006-checkout-orders-and-fake-payment-gateway` | 8 h | todo | none | |
+| M05 | Cart (server + guest merge) | `#0005-server-cart-with-guest-cart-merge` | 6 h | done | 2026-10-14 | PR #6 merged; CI green. 178 API tests + 70 web tests; 32/32 browser checks (guest → sign-in merge → sign-out, SQL stock change, keyboard, axe) |
+| M06 | Checkout and orders (fake gateway) | `#0006-checkout-orders-and-fake-payment-gateway` | 8 h | in progress | none | |
 | M07 | Stripe Checkout (test mode) | `#0007-stripe-checkout-test-mode-and-webhooks` | 6 h | todo | none | Needs the owner's Stripe test keys |
 | M08 | My account | `#0008-account-profile-password-and-order-history` | 4 h | todo | none | |
 | M09 | Admin catalog and image upload | `#0009-admin-catalog-crud-and-image-upload` | 8 h | todo | none | |
