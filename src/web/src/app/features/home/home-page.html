@@ -1,0 +1,104 @@
+<section class="border-b border-border bg-surface">
+  <div
+    class="mx-auto grid max-w-7xl gap-8 px-4 py-14 md:grid-cols-[1.2fr_1fr] md:items-center md:py-20"
+  >
+    <div>
+      <p class="text-sm font-semibold uppercase tracking-widest text-accent">Supplements · Gear</p>
+      <h1 class="fm-display mt-3 text-5xl leading-[0.95] md:text-7xl">
+        Fuel your <span class="text-accent">training</span>
+      </h1>
+      <p class="mt-5 max-w-xl text-lg text-muted">
+        Proteins, pre-workouts and the equipment to use them, from brands that keep their labels
+        honest. Free shipping from €60.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a
+          routerLink="/supplements"
+          class="rounded-md bg-accent px-6 py-3 font-bold text-on-accent hover:bg-accent-strong"
+          >Shop supplements</a
+        >
+        <a
+          routerLink="/gear"
+          class="rounded-md border border-border px-6 py-3 font-bold text-fg hover:bg-surface-2"
+          >Shop gear</a
+        >
+      </div>
+    </div>
+    <ul class="hidden grid-cols-2 gap-3 md:grid" aria-hidden="true">
+      @for (item of heroItems(); track item.id) {
+        <li>
+          <img
+            [src]="item.imageUrl"
+            alt=""
+            width="800"
+            height="800"
+            class="aspect-square w-full rounded-xl object-cover"
+          />
+        </li>
+      }
+    </ul>
+  </div>
+</section>
+
+<div class="mx-auto max-w-7xl space-y-14 px-4 py-12">
+  @for (section of rails; track section.id) {
+    <section [attr.aria-labelledby]="section.id + '-heading'">
+      <h2 [id]="section.id + '-heading'" class="fm-display mb-4 text-2xl md:text-3xl">
+        {{ section.title }}
+      </h2>
+      @if (section.resource.error()) {
+        <app-error-state (retry)="section.resource.reload()" />
+      } @else if (section.resource.hasValue()) {
+        <app-product-grid
+          [products]="section.resource.value().items"
+          [priorityCount]="section.id === 'deals' ? 4 : 0"
+        />
+      } @else {
+        <app-product-grid-skeleton [label]="'Loading ' + section.title" />
+      }
+    </section>
+  }
+
+  @if (hasRatings()) {
+    <section aria-labelledby="top-heading">
+      <h2 id="top-heading" class="fm-display mb-4 text-2xl md:text-3xl">Top rated</h2>
+      <app-product-grid [products]="topRated.value()!.items" />
+    </section>
+  }
+
+  <section aria-labelledby="brands-heading">
+    <div class="mb-4 flex items-end justify-between gap-4">
+      <h2 id="brands-heading" class="fm-display text-2xl md:text-3xl">Our brands</h2>
+      <a
+        routerLink="/brands"
+        class="text-sm font-semibold text-accent underline-offset-4 hover:underline"
+        >All brands</a
+      >
+    </div>
+    @if (brands.error()) {
+      <app-error-state (retry)="brands.reload()" />
+    } @else if (brands.hasValue()) {
+      <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        @for (brand of brands.value(); track brand.slug) {
+          <li>
+            <a
+              [routerLink]="['/brands', brand.slug]"
+              class="block overflow-hidden rounded-lg border border-border hover:border-accent"
+            >
+              <img
+                [src]="brand.logoUrl"
+                [alt]="brand.name"
+                width="600"
+                height="200"
+                loading="lazy"
+                class="w-full"
+              />
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p role="status" class="text-muted">Loading brands…</p>
+    }
+  </section>
+</div>

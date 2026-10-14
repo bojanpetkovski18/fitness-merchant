@@ -14,12 +14,46 @@ function planned(path: string, heading: string, milestone: string, guard?: CanAc
 }
 
 export const routes: Routes = [
-  planned('', 'Home', 'M04'),
-  planned('supplements', 'Supplements', 'M04'),
-  planned('gear', 'Gear', 'M04'),
-  planned('products/:slug', 'Product', 'M04'),
-  planned('brands', 'Brands', 'M04'),
-  planned('brands/:slug', 'Brand', 'M04'),
+  {
+    path: '',
+    title: 'Supplements and training gear',
+    data: {
+      description:
+        'Fitness Merchant: protein, pre-workout and training gear in one modern storefront. A portfolio demo with fictional data.',
+    },
+    loadComponent: () => import('./features/home/home-page').then((m) => m.HomePage),
+  },
+  {
+    path: 'supplements',
+    title: 'Supplements',
+    data: { department: 'supplements' },
+    loadComponent: () => import('./features/catalog/listing-page').then((m) => m.ListingPage),
+  },
+  {
+    path: 'gear',
+    title: 'Gear',
+    data: { department: 'gear' },
+    loadComponent: () => import('./features/catalog/listing-page').then((m) => m.ListingPage),
+  },
+  {
+    path: 'products/:slug',
+    title: 'Product',
+    loadComponent: () => import('./features/catalog/product-page').then((m) => m.ProductPage),
+  },
+  {
+    path: 'brands',
+    title: 'Brands',
+    data: {
+      description:
+        'All brands at Fitness Merchant: sports nutrition, strength and cardio equipment, apparel.',
+    },
+    loadComponent: () => import('./features/catalog/brand-pages').then((m) => m.BrandsPage),
+  },
+  {
+    path: 'brands/:slug',
+    title: 'Brand',
+    loadComponent: () => import('./features/catalog/brand-pages').then((m) => m.BrandPage),
+  },
   planned('cart', 'Cart', 'M05'),
   planned('checkout', 'Checkout', 'M06', authGuard),
   planned('orders/:number/confirmation', 'Order confirmation', 'M06', authGuard),

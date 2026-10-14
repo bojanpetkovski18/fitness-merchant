@@ -1,7 +1,7 @@
 import { Component, ElementRef, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter, skip } from 'rxjs';
+import { filter } from 'rxjs';
 import { SiteFooter } from './core/layout/site-footer';
 import { SiteHeader } from './core/layout/site-header';
 
@@ -14,15 +14,23 @@ export class App {
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
 
   constructor() {
-    // After client-side navigation, move focus to the content so keyboard and screen-reader
-    // users start at the new page instead of the link they activated. Skip the first load.
+    // After navigating to another page, move focus to the content so keyboard and screen-reader
+    // users start at the new page instead of the link they activated. Only when the path changes:
+    // query-only changes (filters, sort, paging) must keep focus where the user is working.
+    // The first load is skipped.
+    let previousPath: string | null = null;
     inject(Router)
       .events.pipe(
         filter((event) => event instanceof NavigationEnd),
-        skip(1),
         takeUntilDestroyed(),
       )
-      .subscribe(() => this.focusMain());
+      .subscribe((event) => {
+        const path = event.urlAfterRedirects.split(/[?#]/)[0];
+        if (previousPath !== null && path !== previousPath) {
+          this.focusMain();
+        }
+        previousPath = path ?? null;
+      });
   }
 
   protected skipToContent(event: Event): void {

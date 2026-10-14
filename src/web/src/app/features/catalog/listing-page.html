@@ -1,0 +1,156 @@
+<div class="mx-auto max-w-7xl px-4 py-8 md:py-10">
+  <header class="mb-6">
+    <h1 class="fm-display text-4xl md:text-5xl">{{ copy().title }}</h1>
+    <p class="mt-2 text-muted">{{ copy().intro }}</p>
+  </header>
+
+  <div class="md:grid md:grid-cols-[15rem_1fr] md:gap-8">
+    <aside class="hidden md:block" aria-labelledby="filters-heading">
+      <h2 id="filters-heading" class="sr-only">Filters</h2>
+      <app-filter-panel
+        [query]="query()"
+        [categories]="categories()"
+        [brands]="brandList()"
+        idPrefix="side-"
+        (changed)="update($event)"
+        (cleared)="clearFilters()"
+      />
+    </aside>
+
+    <section aria-labelledby="results-heading">
+      <h2 id="results-heading" class="sr-only">Products</h2>
+
+      <div class="mb-4 flex flex-wrap items-end gap-3">
+        <div class="min-w-0 flex-1 basis-56">
+          <label for="search" class="mb-1 block text-sm font-semibold"
+            >Search {{ copy().title.toLowerCase() }}</label
+          >
+          <input
+            id="search"
+            type="search"
+            autocomplete="off"
+            [value]="searchText()"
+            (input)="searchText.set($any($event.target).value)"
+            class="w-full rounded-md border border-border bg-surface px-3 py-2"
+          />
+        </div>
+        <div>
+          <label for="sort" class="mb-1 block text-sm font-semibold">Sort by</label>
+          <select
+            id="sort"
+            (change)="setSort($event)"
+            class="rounded-md border border-border bg-surface px-3 py-2"
+          >
+            @for (option of sortOptions; track option.value) {
+              @if (option.value !== 'relevance' || query().q) {
+                <option
+                  [value]="option.value"
+                  [selected]="
+                    option.value === (query().sort ?? (query().q ? 'relevance' : 'newest'))
+                  "
+                >
+                  {{ option.label }}
+                </option>
+              }
+            }
+          </select>
+        </div>
+        <button
+          type="button"
+          class="rounded-md border border-border px-4 py-2 font-bold hover:bg-surface-2 md:hidden"
+          (click)="openFilters(filterDrawer)"
+        >
+          Filters
+          @if (activeFilterCount() > 0) {
+            <span class="ml-1 rounded-full bg-accent px-2 text-xs text-on-accent">{{
+              activeFilterCount()
+            }}</span>
+          }
+        </button>
+      </div>
+
+      <p role="status" class="mb-4 min-h-5 text-sm text-muted">{{ summary() }}</p>
+
+      @if (products.error()) {
+        @if (badRequest()) {
+          <app-empty-state
+            title="These filters don't work together"
+            message="Some filter values were not valid."
+          >
+            <button
+              type="button"
+              class="rounded-md bg-accent px-4 py-2 font-bold text-on-accent"
+              (click)="clearFilters()"
+            >
+              Clear filters
+            </button>
+          </app-empty-state>
+        } @else {
+          <app-error-state title="Couldn't load products" (retry)="products.reload()" />
+        }
+      } @else if (products.isLoading() || !products.hasValue()) {
+        <app-product-grid-skeleton [count]="8" />
+      } @else if (products.value().items.length === 0) {
+        <app-empty-state
+          [title]="products.value().totalCount > 0 ? 'No more products' : 'No products found'"
+          [message]="
+            filtersActive()
+              ? 'Try removing a filter or searching for something else.'
+              : 'Check back soon.'
+          "
+        >
+          @if (filtersActive()) {
+            <button
+              type="button"
+              class="rounded-md bg-accent px-4 py-2 font-bold text-on-accent"
+              (click)="clearFilters()"
+            >
+              Clear filters
+            </button>
+          }
+        </app-empty-state>
+      } @else {
+        <app-product-grid [products]="products.value().items" />
+        <app-pagination
+          [page]="products.value().page"
+          [pageSize]="products.value().pageSize"
+          [totalCount]="products.value().totalCount"
+        />
+      }
+    </section>
+  </div>
+</div>
+
+<ng-template #filterDrawer>
+  <div class="flex h-full flex-col bg-bg text-fg">
+    <div class="flex items-center justify-between border-b border-border px-4 py-3">
+      <h2 id="filter-drawer-title" class="fm-display text-xl">Filters</h2>
+      <button
+        type="button"
+        class="rounded-md px-3 py-1 text-sm font-bold hover:bg-surface-2"
+        (click)="closeFilters()"
+      >
+        Close<span class="sr-only"> filters</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-4 py-4">
+      <app-filter-panel
+        [query]="query()"
+        [categories]="categories()"
+        [brands]="brandList()"
+        idPrefix="drawer-"
+        (changed)="update($event)"
+        (cleared)="clearFilters()"
+      />
+    </div>
+    <div class="border-t border-border p-4">
+      <button
+        type="button"
+        class="w-full rounded-md bg-accent px-4 py-3 font-bold text-on-accent hover:bg-accent-strong"
+        (click)="closeFilters()"
+      >
+        Show {{ totalCount() ?? '' }} results
+      </button>
+    </div>
+  </div>
+</ng-template>
