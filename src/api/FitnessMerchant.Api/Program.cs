@@ -1,6 +1,7 @@
 using FitnessMerchant.Api.Common;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FitnessMerchant.Api.Features.Account;
 using FitnessMerchant.Api.Features.Auth;
 using FitnessMerchant.Api.Features.Cart;
 using FitnessMerchant.Api.Features.Catalog;
@@ -35,6 +36,7 @@ builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.AddAppDatabase();
 builder.AddAppAuth();
 builder.Services.AddAuthFeature();
+builder.Services.AddAccountFeature();
 builder.Services.AddCatalogFeature();
 builder.Services.AddCartFeature();
 builder.Services.AddOrdersFeature();
@@ -60,6 +62,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthEndpoints();
 app.MapImageEndpoints();
 app.MapAuthEndpoints();
+app.MapAccountEndpoints();
 app.MapCatalogEndpoints();
 app.MapCartEndpoints();
 app.MapOrderEndpoints();

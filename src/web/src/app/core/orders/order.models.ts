@@ -26,6 +26,8 @@ export interface OrderItem {
   readonly unitPrice: number;
   readonly quantity: number;
   readonly lineTotal: number;
+  /** False once the product is archived: show the name as text, there is no page to link to. */
+  readonly productAvailable: boolean;
 }
 
 export interface Order {

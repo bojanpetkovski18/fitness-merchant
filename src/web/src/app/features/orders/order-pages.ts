@@ -34,11 +34,16 @@ function isNotFound(error: unknown): boolean {
             <li class="flex justify-between gap-3 py-2">
               <span class="min-w-0">
                 {{ item.quantity }} ×
-                <a
-                  [routerLink]="['/products', item.productSlug]"
-                  class="font-semibold hover:text-accent"
-                  >{{ item.productName }}</a
-                >
+                @if (item.productAvailable) {
+                  <a
+                    [routerLink]="['/products', item.productSlug]"
+                    class="font-semibold hover:text-accent"
+                    >{{ item.productName }}</a
+                  >
+                } @else {
+                  <span class="font-semibold">{{ item.productName }}</span>
+                  <span class="text-muted"> (no longer sold)</span>
+                }
                 <span class="text-muted"> at {{ item.unitPrice | currency: 'EUR' }}</span>
               </span>
               <span class="shrink-0 font-semibold">{{ item.lineTotal | currency: 'EUR' }}</span>
@@ -157,58 +162,56 @@ export class OrderConfirmationPage {
     ErrorState,
   ],
   template: `
-    <div class="mx-auto max-w-5xl px-4 py-8 md:py-10">
-      <h1 class="fm-display text-4xl md:text-5xl">My orders</h1>
-      <div class="mt-6">
-        @if (orders.error()) {
-          <app-error-state title="Couldn't load your orders" (retry)="orders.reload()" />
-        } @else if (orders.hasValue()) {
-          @if (orders.value().totalCount === 0) {
-            <app-empty-state
-              title="No orders yet"
-              message="Your orders will appear here once you check out."
+    <h1 class="fm-display text-3xl md:text-4xl">My orders</h1>
+    <div class="mt-6">
+      @if (orders.error()) {
+        <app-error-state title="Couldn't load your orders" (retry)="orders.reload()" />
+      } @else if (orders.hasValue()) {
+        @if (orders.value().totalCount === 0) {
+          <app-empty-state
+            title="No orders yet"
+            message="Your orders will appear here once you check out."
+          >
+            <a
+              routerLink="/supplements"
+              class="rounded-md bg-accent px-4 py-2 font-bold text-on-accent"
+              >Start shopping</a
             >
-              <a
-                routerLink="/supplements"
-                class="rounded-md bg-accent px-4 py-2 font-bold text-on-accent"
-                >Start shopping</a
-              >
-            </app-empty-state>
-          } @else {
-            <ul class="divide-y divide-border rounded-xl border border-border bg-surface">
-              @for (o of orders.value().items; track o.number) {
-                <li
-                  class="relative flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-surface-2"
-                >
-                  <div>
-                    <a
-                      [routerLink]="['/account/orders', o.number]"
-                      class="font-mono font-bold after:absolute after:inset-0 after:content-['']"
-                    >
-                      {{ o.number }}
-                    </a>
-                    <p class="text-sm text-muted">
-                      {{ o.placedAt | date: 'mediumDate' }} · {{ o.itemCount }}
-                      {{ o.itemCount === 1 ? 'item' : 'items' }}
-                    </p>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <app-order-status-badge [status]="o.status" />
-                    <span class="font-bold">{{ o.total | currency: 'EUR' }}</span>
-                  </div>
-                </li>
-              }
-            </ul>
-            <app-pagination
-              [page]="orders.value().page"
-              [pageSize]="orders.value().pageSize"
-              [totalCount]="orders.value().totalCount"
-            />
-          }
+          </app-empty-state>
         } @else {
-          <p role="status" class="text-muted">Loading your orders…</p>
+          <ul class="divide-y divide-border rounded-xl border border-border bg-surface">
+            @for (o of orders.value().items; track o.number) {
+              <li
+                class="relative flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-surface-2"
+              >
+                <div>
+                  <a
+                    [routerLink]="['/account/orders', o.number]"
+                    class="font-mono font-bold after:absolute after:inset-0 after:content-['']"
+                  >
+                    {{ o.number }}
+                  </a>
+                  <p class="text-sm text-muted">
+                    {{ o.placedAt | date: 'mediumDate' }} · {{ o.itemCount }}
+                    {{ o.itemCount === 1 ? 'item' : 'items' }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <app-order-status-badge [status]="o.status" />
+                  <span class="font-bold">{{ o.total | currency: 'EUR' }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+          <app-pagination
+            [page]="orders.value().page"
+            [pageSize]="orders.value().pageSize"
+            [totalCount]="orders.value().totalCount"
+          />
         }
-      </div>
+      } @else {
+        <p role="status" class="text-muted">Loading your orders…</p>
+      }
     </div>
   `,
 })
@@ -224,66 +227,64 @@ export class OrdersPage {
   selector: 'app-order-detail-page',
   imports: [RouterLink, DatePipe, OrderStatusBadge, OrderSummaryView, EmptyState, ErrorState],
   template: `
-    <div class="mx-auto max-w-5xl px-4 py-8 md:py-10">
-      <a routerLink="/account/orders" class="text-sm font-semibold text-muted hover:text-fg"
-        >‹ My orders</a
-      >
-      @if (notFound()) {
-        <div class="mt-4">
-          <app-empty-state
-            title="Order not found"
-            message="It may belong to another account, or the link is wrong."
-          />
-        </div>
-      } @else if (order.error()) {
-        <div class="mt-4">
-          <app-error-state title="Couldn't load this order" (retry)="order.reload()" />
-        </div>
-      } @else if (order.hasValue()) {
-        @let o = order.value();
-        <div class="mt-2 flex flex-wrap items-center gap-3">
-          <h1 class="fm-display font-mono text-3xl md:text-4xl">{{ o.number }}</h1>
-          <app-order-status-badge [status]="o.status" />
-        </div>
-        <p class="mt-1 text-muted">Placed {{ o.placedAt | date: 'medium' }}</p>
+    <a routerLink="/account/orders" class="text-sm font-semibold text-muted hover:text-fg"
+      >‹ My orders</a
+    >
+    @if (notFound()) {
+      <div class="mt-4">
+        <app-empty-state
+          title="Order not found"
+          message="It may belong to another account, or the link is wrong."
+        />
+      </div>
+    } @else if (order.error()) {
+      <div class="mt-4">
+        <app-error-state title="Couldn't load this order" (retry)="order.reload()" />
+      </div>
+    } @else if (order.hasValue()) {
+      @let o = order.value();
+      <div class="mt-2 flex flex-wrap items-center gap-3">
+        <h1 class="fm-display font-mono text-3xl md:text-4xl">{{ o.number }}</h1>
+        <app-order-status-badge [status]="o.status" />
+      </div>
+      <p class="mt-1 text-muted">Placed {{ o.placedAt | date: 'medium' }}</p>
 
-        <section aria-labelledby="timeline-heading" class="mt-6">
-          <h2 id="timeline-heading" class="font-bold">Status</h2>
-          <ol class="mt-3 space-y-3 border-l-2 border-border pl-4">
-            @for (h of o.history; track $index) {
-              <li class="relative">
-                <span
-                  aria-hidden="true"
-                  class="absolute -left-[1.4rem] top-1.5 size-3 rounded-full bg-accent"
-                ></span>
-                <p class="font-semibold">{{ label(h.status) }}</p>
-                <p class="text-sm text-muted">
-                  <time [attr.datetime]="h.at">{{ h.at | date: 'medium' }}</time>
-                  @if (h.note) {
-                    · {{ h.note }}
-                  }
-                </p>
-              </li>
-            }
-          </ol>
-        </section>
+      <section aria-labelledby="timeline-heading" class="mt-6">
+        <h2 id="timeline-heading" class="font-bold">Status</h2>
+        <ol class="mt-3 space-y-3 border-l-2 border-border pl-4">
+          @for (h of o.history; track $index) {
+            <li class="relative">
+              <span
+                aria-hidden="true"
+                class="absolute -left-[1.4rem] top-1.5 size-3 rounded-full bg-accent"
+              ></span>
+              <p class="font-semibold">{{ label(h.status) }}</p>
+              <p class="text-sm text-muted">
+                <time [attr.datetime]="h.at">{{ h.at | date: 'medium' }}</time>
+                @if (h.note) {
+                  · {{ h.note }}
+                }
+              </p>
+            </li>
+          }
+        </ol>
+      </section>
 
-        <div class="mt-6"><app-order-summary [order]="o" /></div>
+      <div class="mt-6"><app-order-summary [order]="o" /></div>
 
-        @if (o.canCancel) {
-          <button
-            type="button"
-            class="mt-6 rounded-md border border-danger px-5 py-2.5 font-bold text-danger hover:bg-danger hover:text-bg disabled:opacity-60"
-            [disabled]="cancelling()"
-            (click)="cancel(o.number)"
-          >
-            {{ cancelling() ? 'Cancelling…' : 'Cancel order' }}
-          </button>
-        }
-      } @else {
-        <p role="status" class="mt-4 text-muted">Loading the order…</p>
+      @if (o.canCancel) {
+        <button
+          type="button"
+          class="mt-6 rounded-md border border-danger px-5 py-2.5 font-bold text-danger hover:bg-danger hover:text-bg disabled:opacity-60"
+          [disabled]="cancelling()"
+          (click)="cancel(o.number)"
+        >
+          {{ cancelling() ? 'Cancelling…' : 'Cancel order' }}
+        </button>
       }
-    </div>
+    } @else {
+      <p role="status" class="mt-4 text-muted">Loading the order…</p>
+    }
   `,
 })
 export class OrderDetailPage {
@@ -307,6 +308,7 @@ export class OrderDetailPage {
       title: 'Cancel this order?',
       message: 'The items go back on sale. In this demo no real money was taken.',
       confirmLabel: 'Cancel order',
+      dismissLabel: 'Keep order',
     });
     if (!confirmed) return;
     this.cancelling.set(true);

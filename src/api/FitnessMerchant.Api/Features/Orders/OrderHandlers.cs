@@ -22,11 +22,23 @@ public sealed class OrderQueries(AppDbContext db)
         return new PagedResponse<OrderSummaryResponse>(items, page, PageSize, total);
     }
 
-    public async Task<OrderResponse?> GetAsync(Guid userId, string number, CancellationToken cancellationToken) =>
-        (await db.Orders.AsNoTracking()
+    public async Task<OrderResponse?> GetAsync(Guid userId, string number, CancellationToken cancellationToken)
+    {
+        var order = await db.Orders.AsNoTracking()
             .Include(o => o.Items).Include(o => o.StatusChanges)
             .AsSplitQuery()
-            .SingleOrDefaultAsync(o => o.UserId == userId && o.Number == number, cancellationToken))?.ToResponse();
+            .SingleOrDefaultAsync(o => o.UserId == userId && o.Number == number, cancellationToken);
+        return order?.ToResponse(await LiveSlugsAsync(db, order, cancellationToken));
+    }
+
+    /// <summary>Current slugs of the order's products that are still on sale, in one query.</summary>
+    internal static async Task<Dictionary<Guid, string>> LiveSlugsAsync(AppDbContext db, Order order, CancellationToken cancellationToken)
+    {
+        var ids = order.Items.Select(i => i.ProductId).ToList();
+        return await db.Products.AsNoTracking()
+            .Where(p => ids.Contains(p.Id) && p.IsActive)
+            .ToDictionaryAsync(p => p.Id, p => p.Slug, cancellationToken);
+    }
 }
 
 public sealed class OrderCommands(AppDbContext db, TimeProvider time)
@@ -66,6 +78,6 @@ public sealed class OrderCommands(AppDbContext db, TimeProvider time)
                 extensions: new Dictionary<string, object?> { ["code"] = "concurrent-change" });
         }
         await transaction.CommitAsync(cancellationToken);
-        return Results.Ok(order.ToResponse());
+        return Results.Ok(order.ToResponse(await OrderQueries.LiveSlugsAsync(db, order, cancellationToken)));
     }
 }

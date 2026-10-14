@@ -261,6 +261,26 @@ public class CheckoutTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task Order_items_link_to_the_current_slug_and_archived_products_are_flagged()
+    {
+        await using var api = await StartAsync();
+        using var customer = await api.CustomerWithCartAsync((Whey, 1), (Creatine, 1));
+        var placed = (await (await CheckoutAsync(customer, FakePaymentGateway.SuccessCard)).Content.ReadFromJsonAsync<OrderResponse>(Json, Ct))!;
+        Assert.All(placed.Items, i => Assert.True(i.ProductAvailable));
+
+        await api.Db(db => db.Products.Where(p => p.Slug == Whey).ExecuteUpdateAsync(s => s.SetProperty(p => p.Slug, "whey-isolate-vanilla-2-kg-v2"), Ct));
+        await api.Db(db => db.Products.Where(p => p.Slug == Creatine).ExecuteUpdateAsync(s => s.SetProperty(p => p.IsActive, false), Ct));
+
+        var order = (await customer.Http.GetFromJsonAsync<OrderResponse>($"/api/orders/{placed.Number}", Json, Ct))!;
+
+        var whey = order.Items.Single(i => i.Sku == "HAL-0001");
+        Assert.Equal(("whey-isolate-vanilla-2-kg-v2", true), (whey.ProductSlug, whey.ProductAvailable));
+        var creatine = order.Items.Single(i => i.ProductSlug == Creatine);
+        Assert.False(creatine.ProductAvailable);
+        Assert.Equal(24.90m, creatine.UnitPrice); // the snapshot is unaffected
+    }
+
+    [Fact]
     public async Task Card_numbers_never_appear_in_the_logs()
     {
         await using var api = await StartAsync();

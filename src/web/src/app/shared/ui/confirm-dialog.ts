@@ -6,6 +6,8 @@ export interface ConfirmOptions {
   readonly title: string;
   readonly message: string;
   readonly confirmLabel: string;
+  /** Defaults to "Cancel"; set it when "Cancel" would be ambiguous (e.g. "Cancel order?"). */
+  readonly dismissLabel?: string;
 }
 
 /** An accessible yes/no dialog (CDK: focus trap, Escape cancels, focus returns to the trigger). */
@@ -23,7 +25,7 @@ export interface ConfirmOptions {
           class="rounded-md border border-border px-4 py-2 font-bold hover:bg-surface-2"
           (click)="ref.close(false)"
         >
-          Cancel
+          {{ data.dismissLabel ?? 'Cancel' }}
         </button>
         <button
           type="button"
