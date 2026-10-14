@@ -330,3 +330,43 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - Emptying the cart asks in a CDK `alertdialog` that starts on Cancel.
   - Checkout is `aria-disabled` with a described reason while lines have issues.
 - **Test infrastructure:** the integration suite outgrew PostgreSQL's 100 connections (one pool per test database). Test connection strings now prune idle connections after about 2 s with pools of at most 10, and the test container allows 300 connections. Three consecutive green runs of about 17 s.
+
+## D024: Checkout, orders and payments (M06)
+- **Date:** 2026-10-14
+- **Order model:**
+  - An `Order` aggregate guards its status with `OrderStateMachine` (SPEC F10); every transition appends an `order_status_changes` row, the audit trail.
+  - Items snapshot product name, slug, SKU and the price paid.
+  - Totals are tied together by check constraints (`total = subtotal + shipping_cost`, `line_total = unit_price * quantity`).
+  - Orders and order items **RESTRICT** deletion of users and products (financial records).
+  - Order numbers come from a PostgreSQL sequence (`FM-000001`).
+- **Stock uses a conditional UPDATE instead of the brief's "xmin, retry once":**
+  - `StockLedger.TryTakeAsync` runs `UPDATE … SET stock = stock - n WHERE … AND stock >= n`. Under READ COMMITTED a competing transaction blocks on the row lock and re-checks the condition, so the last unit cannot be sold twice. No retry loop is needed; the `stock >= 0` constraint is the backstop.
+  - **Verification:** a test forces the interleaving with two real transactions (B is asserted to be blocked while A holds the row).
+  - **Mutation check:** removing the guard makes that test fail (B then hits the check constraint, 23514).
+  - An earlier HTTP-level race test still passed under the same mutation, because the requests did not overlap. It is kept as a 6-buyer smoke test but is not the proof.
+- **Checkout flow:**
+  - Validate; replay a known `Idempotency-Key` (unique per user).
+  - Re-price the cart: an issue gives 409 `cart-changed`; a total different from `expectedTotal` gives 409 `price-changed` with the new total.
+  - One transaction: order + stock + cart clear.
+  - **Charge outside the transaction**, so no row locks are held during an external call.
+  - A decline or gateway error runs a compensating transaction: cancel the order, return the stock, restore the cart lines.
+- **Payments (D010):**
+  - `IPaymentGateway` with `FakePaymentGateway` (4242… succeeds, 4000…0002 is declined, anything else is declined with a hint); `Payments__Provider` must be `Fake` until M07.
+  - Card data is validated server-side (Luhn, future expiry, CVC) and never stored beyond brand and last 4.
+  - `CardDetails` and `PaymentInput` override `ToString()` with masked output.
+  - A test captures all API logs during declined and paid checkouts and asserts no card number appears; the manual run's log was grepped as well (0 matches in 1,164 lines).
+- **Customer cancel:**
+  - Allowed while `PendingPayment` or `Paid`; restocks.
+  - `xmin` on orders turns a concurrent staff change into a clean 409.
+  - The fake gateway takes no money, so there is no refund step. Real refunds are out of scope even with Stripe (M07).
+- **Rate limit:** checkout is limited to 10 per minute per IP (`RateLimiting__CheckoutPermitLimit`); each attempt may hit the gateway.
+- **Seed:**
+  - 10 fictional customers with no password (cannot sign in), reused if they already exist.
+  - 40 historical orders over 90 days, numbered in date order, with full audit trails. The newest 6 are still `Paid` (work for M10); big-ticket items have quantity 1.
+  - Deterministic (fixed random seed); stock untouched.
+- **Checkout UI:**
+  - Three steps as plain sections with an `aria-current="step"` progress list and focus moved to each step heading, instead of a CDK stepper. Simpler, and announced more clearly.
+  - Server field-error keys (`shipping.city`) map back to the right step.
+  - One idempotency key per attempt.
+  - The review step re-prices before showing "Place order · €total".
+- **Header fix:** signed-in at 768 px the account button overflowed by 73 px (M03 checked 768 px only as a guest). The display name now shows from 1024 px; initials and the accessible name always do.

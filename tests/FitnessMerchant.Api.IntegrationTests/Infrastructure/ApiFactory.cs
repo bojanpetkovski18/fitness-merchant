@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace FitnessMerchant.Api.IntegrationTests.Infrastructure;
 
@@ -21,6 +22,9 @@ namespace FitnessMerchant.Api.IntegrationTests.Infrastructure;
 public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<string, string?>? settings = null)
     : WebApplicationFactory<Program>
 {
+    /// <summary>Everything the API logged, for assertions about what must never appear (card numbers, passwords).</summary>
+    public CapturedLogs Logs { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -34,6 +38,7 @@ public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<stri
         }
 
         builder.ConfigureTestServices(services => services.AddSingleton<IEndpointMapper, TestEndpoints>());
+        builder.ConfigureLogging(logging => logging.AddProvider(Logs).SetMinimumLevel(LogLevel.Debug));
     }
 
     /// <summary>A browser-like client: HTTPS, keeps cookies and echoes the XSRF cookie as a header (like Angular).</summary>

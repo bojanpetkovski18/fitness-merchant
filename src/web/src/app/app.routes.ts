@@ -59,8 +59,25 @@ export const routes: Routes = [
     title: 'Cart',
     loadComponent: () => import('./features/cart/cart-page').then((m) => m.CartPage),
   },
-  planned('checkout', 'Checkout', 'M06', authGuard),
-  planned('orders/:number/confirmation', 'Order confirmation', 'M06', authGuard),
+  {
+    path: 'checkout',
+    title: 'Checkout',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/checkout/checkout-page').then((m) => m.CheckoutPage),
+  },
+  {
+    path: 'orders/:number/confirmation',
+    title: 'Order confirmed',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/orders/order-pages').then((m) => m.OrderConfirmationPage),
+  },
+  {
+    path: 'account/orders',
+    title: 'My orders',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/orders/order-pages').then((m) => m.OrdersPage),
+  },
   {
     path: 'sign-in',
     title: 'Sign in',
@@ -74,7 +91,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/register-page').then((m) => m.RegisterPage),
   },
   planned('account', 'My account', 'M08', authGuard),
-  planned('account/orders/:number', 'Order details', 'M08', authGuard),
+  {
+    path: 'account/orders/:number',
+    title: 'Order details',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/orders/order-pages').then((m) => m.OrderDetailPage),
+  },
   planned('admin', 'Admin', 'M09', adminGuard),
   planned('about', 'About', 'M12'),
   planned('contact', 'Contact', 'M12'),

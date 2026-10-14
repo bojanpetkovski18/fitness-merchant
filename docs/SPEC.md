@@ -119,6 +119,7 @@ Every data-driven screen has **loading** (skeletons), **empty**, **error** (mess
 | Cart | `/cart` | public | Empty state links to shopping; stock-conflict warnings per line |
 | Checkout | `/checkout` | customer | Three-step stepper; redirects to the cart if it is empty |
 | Order confirmation | `/orders/:number/confirmation` | owner | |
+| My orders | `/account/orders` | customer | Paged list; becomes a tab of the account area in M08 |
 | Sign in / Register | `/sign-in`, `/register` | guest | Return URL preserved |
 | Account | `/account` (profile, password, orders) | customer | |
 | Order detail | `/account/orders/:number` | owner | Status timeline; cancel button when allowed |
@@ -145,7 +146,7 @@ REST over JSON. Errors are RFC 7807 `application/problem+json` with a `traceId`;
 | `GET /api/auth/me` | public | `{ user }`, with `user: null` for guests (200 either way, so guest page loads log no errors); also refreshes the XSRF cookie |
 | `POST /api/cart/quote` `{items}` | public, rate-limited | Price a guest cart (nothing persisted) |
 | `GET /api/cart`; `PUT /api/cart/items/{productId}` `{quantity}`; `DELETE /api/cart/items/{productId}`; `DELETE /api/cart`; `POST /api/cart/merge` | customer | The caller's own cart only (no cart ID in any route). Every call returns the priced cart. `PUT` answers 404 for archived or unknown products and 409 (with `maxQuantity`) when out of stock or above stock. Lines carry `issue`: `unavailable`, `out-of-stock` or `exceeds-stock`. |
-| `POST /api/checkout` | customer | Create an order from the cart; returns the order plus a payment action |
+| `POST /api/checkout` + `Idempotency-Key` header | customer, rate-limited | Create an order from the caller's cart and charge it. Body: `{ shipping, payment, expectedTotal }`. Responses: 201 order; 200 replay of the same key; 400 field errors (`shipping.*`, `payment.*`) or `cart-empty`; 402 `payment-declined`; 409 `cart-changed`, `price-changed` (with the new `total`), `out-of-stock`, `duplicate-submit`; 502 `payment-error`. The problem `code` extension carries the reason. |
 | `POST /api/payments/stripe/webhook` | public, signature-verified | Stripe events |
 | `GET /api/orders?page`, `GET /api/orders/{number}`, `POST /api/orders/{number}/cancel` | customer (own) | |
 | `PUT /api/account/profile`, `POST /api/account/password` | customer | |
