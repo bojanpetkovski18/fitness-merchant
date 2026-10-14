@@ -14,12 +14,16 @@ public sealed class RateLimitOptions
 
     /// <summary>Guest cart quotes per client IP per minute; generous, it only guards against abuse.</summary>
     public int QuotePermitLimit { get; init; } = 120;
+
+    /// <summary>Checkout attempts per client IP per minute (each may hit the payment gateway).</summary>
+    public int CheckoutPermitLimit { get; init; } = 10;
 }
 
 public static class RateLimiting
 {
     public const string AuthPolicy = "auth";
     public const string QuotePolicy = "cart-quote";
+    public const string CheckoutPolicy = "checkout";
 
     public static IServiceCollection AddAppRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
@@ -62,6 +66,15 @@ public static class RateLimiting
                 _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = options.QuotePermitLimit,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+
+            limiter.AddPolicy(CheckoutPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = options.CheckoutPermitLimit,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));

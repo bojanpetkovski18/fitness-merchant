@@ -39,7 +39,7 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _container.DisposeAsync();
 
-    /// <summary>A new database with the current schema and the seed catalog.</summary>
+    /// <summary>A new database with the current schema, the seed catalog and the seed order history.</summary>
     public Task<string> CreateDatabaseAsync() => CreateDatabaseAsync(fromTemplate: true);
 
     /// <summary>A new, completely empty database (no schema), for migration tests.</summary>
@@ -55,6 +55,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         await db.Database.MigrateAsync();
         await new CatalogSeeder(db, TimeProvider.System, NullLogger<CatalogSeeder>.Instance).SeedAsync();
+        await new OrderSeeder(db, TimeProvider.System, NullLogger<OrderSeeder>.Instance).SeedAsync();
     }
 
     private async Task<string> CreateDatabaseAsync(bool fromTemplate)
