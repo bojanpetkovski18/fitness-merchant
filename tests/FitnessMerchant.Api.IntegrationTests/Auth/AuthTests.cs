@@ -240,6 +240,26 @@ public class AuthTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task A_session_cookie_stops_working_once_the_security_stamp_changes()
+    {
+        await using var factory = new ApiFactory(await postgres.CreateDatabaseAsync());
+        using var browser = factory.CreateBrowserClient();
+        var email = BrowserClient.NewEmail();
+        await browser.RegisterAsync(email);
+        Assert.Equal(email, (await browser.MeAsync()).User?.Email);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            // What a password change (or a future "sign out everywhere") does to the stored user.
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            await users.UpdateSecurityStampAsync((await users.FindByEmailAsync(email))!);
+        }
+
+        Assert.Null((await browser.MeAsync()).User);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await browser.Http.GetAsync("/api/test/unannotated", Ct)).StatusCode);
+    }
+
+    [Fact]
     public async Task Demo_users_are_seeded_from_settings_and_can_sign_in()
     {
         await using var factory = new ApiFactory(await postgres.CreateDatabaseAsync(), new Dictionary<string, string?>

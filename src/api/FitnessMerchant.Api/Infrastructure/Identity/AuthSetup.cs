@@ -43,12 +43,18 @@ public static class AuthSetup
             options.SlidingExpiration = true;
 
             // An API answers 401/403 (rendered as problem details) instead of redirecting to a login page.
+            // Replacing Events drops Identity's default security-stamp hook, so it is wired back explicitly.
             options.Events = new CookieAuthenticationEvents
             {
+                OnValidatePrincipal = SecurityStampValidator.ValidatePrincipalAsync,
                 OnRedirectToLogin = context => SetStatus(context.Response, StatusCodes.Status401Unauthorized),
                 OnRedirectToAccessDenied = context => SetStatus(context.Response, StatusCodes.Status403Forbidden),
             };
         });
+
+        // D025: check the security stamp on every request, so a password change ends other sessions at once
+        // (one indexed user lookup per authenticated request; the default is every 30 minutes).
+        builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
 
         builder.Services.AddAuthorizationBuilder()
             // Every endpoint requires a signed-in user unless it opts out with AllowAnonymous().
