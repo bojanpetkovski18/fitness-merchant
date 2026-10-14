@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ProductCard as ProductCardModel } from '../../core/catalog/catalog.models';
@@ -20,7 +22,10 @@ const base: ProductCardModel = {
 };
 
 async function render(product: ProductCardModel): Promise<HTMLElement> {
-  TestBed.configureTestingModule({ imports: [ProductCard], providers: [provideRouter([])] });
+  TestBed.configureTestingModule({
+    imports: [ProductCard],
+    providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+  });
   const fixture = TestBed.createComponent(ProductCard);
   fixture.componentRef.setInput('product', product);
   await fixture.whenStable();
@@ -28,7 +33,7 @@ async function render(product: ProductCardModel): Promise<HTMLElement> {
 }
 
 describe('ProductCard', () => {
-  it('has exactly one link, named after the product, pointing at its page', async () => {
+  it('has exactly one link plus a named add-to-cart button', async () => {
     const element = await render(base);
 
     const links = element.querySelectorAll('a');
@@ -36,6 +41,9 @@ describe('ProductCard', () => {
     expect(links[0]!.textContent?.trim()).toBe('Whey Isolate Vanilla 2 kg');
     expect(links[0]!.getAttribute('href')).toBe('/products/whey-isolate-vanilla-2-kg');
     expect(element.querySelector('img')?.getAttribute('alt')).toBe('');
+    expect(element.querySelector('button')?.getAttribute('aria-label')).toBe(
+      'Add Whey Isolate Vanilla 2 kg to cart',
+    );
   });
 
   it('shows the plain price, stock and "no reviews" without a discount', async () => {
@@ -60,6 +68,8 @@ describe('ProductCard', () => {
     const element = await render({ ...base, stockStatus: 'out-of-stock' });
 
     expect(element.textContent).toContain('Out of stock');
+    expect(element.querySelector('button')?.disabled).toBe(true);
+    expect(element.querySelector('button')?.textContent?.trim()).toBe('Sold out');
     expect(element.querySelector('img')?.classList).toContain('opacity-60');
   });
 

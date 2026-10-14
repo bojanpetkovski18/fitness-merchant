@@ -144,7 +144,7 @@ REST over JSON. Errors are RFC 7807 `application/problem+json` with a `traceId`;
 | `POST /api/auth/register`, `POST /api/auth/sign-in`, `POST /api/auth/sign-out` | public (sign-out: user) | Rate-limited |
 | `GET /api/auth/me` | public | `{ user }`, with `user: null` for guests (200 either way, so guest page loads log no errors); also refreshes the XSRF cookie |
 | `POST /api/cart/quote` `{items}` | public, rate-limited | Price a guest cart (nothing persisted) |
-| `GET /api/cart`; `PUT /api/cart/items/{productId}` `{quantity}`; `DELETE /api/cart/items/{productId}`; `DELETE /api/cart`; `POST /api/cart/merge` | customer | The caller's own cart only |
+| `GET /api/cart`; `PUT /api/cart/items/{productId}` `{quantity}`; `DELETE /api/cart/items/{productId}`; `DELETE /api/cart`; `POST /api/cart/merge` | customer | The caller's own cart only (no cart ID in any route). Every call returns the priced cart. `PUT` answers 404 for archived or unknown products and 409 (with `maxQuantity`) when out of stock or above stock. Lines carry `issue`: `unavailable`, `out-of-stock` or `exceeds-stock`. |
 | `POST /api/checkout` | customer | Create an order from the cart; returns the order plus a payment action |
 | `POST /api/payments/stripe/webhook` | public, signature-verified | Stripe events |
 | `GET /api/orders?page`, `GET /api/orders/{number}`, `POST /api/orders/{number}/cancel` | customer (own) | |

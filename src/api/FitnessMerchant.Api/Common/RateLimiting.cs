@@ -11,11 +11,15 @@ public sealed class RateLimitOptions
     public int AuthPermitLimit { get; init; } = 10;
 
     public int AuthWindowSeconds { get; init; } = 60;
+
+    /// <summary>Guest cart quotes per client IP per minute; generous, it only guards against abuse.</summary>
+    public int QuotePermitLimit { get; init; } = 120;
 }
 
 public static class RateLimiting
 {
     public const string AuthPolicy = "auth";
+    public const string QuotePolicy = "cart-quote";
 
     public static IServiceCollection AddAppRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
@@ -51,6 +55,14 @@ public static class RateLimiting
                 {
                     PermitLimit = options.AuthPermitLimit,
                     Window = TimeSpan.FromSeconds(options.AuthWindowSeconds),
+                    QueueLimit = 0,
+                }));
+            limiter.AddPolicy(QuotePolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = options.QuotePermitLimit,
+                    Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));
         });

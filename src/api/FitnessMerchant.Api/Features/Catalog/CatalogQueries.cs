@@ -1,3 +1,4 @@
+using FitnessMerchant.Api.Domain.Carts;
 using FitnessMerchant.Api.Domain.Catalog;
 using FitnessMerchant.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +20,6 @@ internal sealed record ProductRow(
 internal static class CatalogMapping
 {
     public const int LowStockThreshold = 5;
-    public const int MaxOrderQuantity = 10;
 
     public static StockStatus Stock(int quantity) => quantity switch
     {
@@ -185,7 +185,7 @@ public sealed class GetProductQuery(AppDbContext db)
             : new ProductDetailResponse(
                 product.Id, product.Slug, product.Sku, product.Name, product.Description, product.Brand, product.Category,
                 product.Department, product.Price, product.DiscountPercent, product.SalePrice,
-                CatalogMapping.Stock(product.StockQuantity), Math.Clamp(product.StockQuantity, 0, CatalogMapping.MaxOrderQuantity),
+                CatalogMapping.Stock(product.StockQuantity), CartPricing.MaxQuantity(product.StockQuantity),
                 product.RatingAverage, product.RatingCount, CatalogMapping.ImageUrl(product.ImageId));
     }
 }

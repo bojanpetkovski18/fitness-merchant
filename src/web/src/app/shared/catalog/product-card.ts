@@ -1,5 +1,6 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CartStore } from '../../core/cart/cart.store';
 import { ProductCard as ProductCardModel } from '../../core/catalog/catalog.models';
 import { PriceTag } from './price-tag';
 import { RatingStars } from './rating-stars';
@@ -55,6 +56,26 @@ import { StockBadge } from './stock-badge';
           />
           <app-stock-badge [status]="p.stockStatus" />
         </div>
+        <!-- Above the stretched link (z-10), so it is its own click and tab target. -->
+        <button
+          type="button"
+          class="relative z-10 mt-2 w-full rounded-md border border-accent px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-on-accent disabled:border-border disabled:text-muted disabled:hover:bg-transparent"
+          [disabled]="p.stockStatus === 'out-of-stock' || cart.isBusy(p.id)"
+          [attr.aria-label]="
+            p.stockStatus === 'out-of-stock'
+              ? p.name + ' is sold out'
+              : 'Add ' + p.name + ' to cart'
+          "
+          (click)="cart.add(p)"
+        >
+          {{
+            p.stockStatus === 'out-of-stock'
+              ? 'Sold out'
+              : cart.isBusy(p.id)
+                ? 'Adding…'
+                : 'Add to cart'
+          }}
+        </button>
       </div>
     </article>
   `,
@@ -63,4 +84,5 @@ export class ProductCard {
   readonly product = input.required<ProductCardModel>();
   /** First-row cards are likely the Largest Contentful Paint, so they load eagerly instead of lazily. */
   readonly priority = input(false);
+  protected readonly cart = inject(CartStore);
 }

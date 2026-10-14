@@ -18,7 +18,10 @@ public sealed class PostgresFixture : IAsyncLifetime
 {
     private const string TemplateDatabase = "fm_template";
 
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18.6-alpine").Build();
+    // Every test has its own database and therefore its own connection pool; extra headroom for parallel runs.
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18.6-alpine")
+        .WithCommand("-c", "max_connections=300")
+        .Build();
 
     public async ValueTask InitializeAsync()
     {
@@ -63,8 +66,18 @@ public sealed class PostgresFixture : IAsyncLifetime
         return ConnectionStringFor(name);
     }
 
+    /// <summary>
+    /// Small pools that drop idle connections after about 2 s, so pools of finished tests do not pile up until
+    /// PostgreSQL refuses new clients (53300 "too many clients", seen once the suite passed ~160 tests).
+    /// </summary>
     private string ConnectionStringFor(string database) =>
-        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = database }.ConnectionString;
+        new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
+        {
+            Database = database,
+            MaxPoolSize = 10,
+            ConnectionIdleLifetime = 2,
+            ConnectionPruningInterval = 1,
+        }.ConnectionString;
 
     private async Task ExecuteOnServerAsync(string sql)
     {

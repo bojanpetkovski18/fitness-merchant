@@ -72,7 +72,10 @@
           <p class="text-sm text-muted">Only {{ p.maxOrderQuantity }} left.</p>
         }
 
-        <form class="mt-2 flex flex-wrap items-end gap-3" (submit)="$event.preventDefault()">
+        <form
+          class="mt-2 flex flex-wrap items-end gap-3"
+          (submit)="$event.preventDefault(); addToCart(p)"
+        >
           <div>
             <label for="quantity" class="mb-1 block text-sm font-semibold">Quantity</label>
             <div class="flex items-center rounded-md border border-border">
@@ -107,16 +110,26 @@
           <div>
             <button
               type="submit"
-              disabled
-              aria-describedby="cart-note"
-              class="rounded-md bg-accent px-6 py-3 font-bold text-on-accent opacity-60"
+              [disabled]="p.stockStatus === 'out-of-stock' || cart.isBusy(p.id)"
+              class="rounded-md bg-accent px-6 py-3 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60"
             >
-              {{ p.stockStatus === 'out-of-stock' ? 'Out of stock' : 'Add to cart' }}
+              {{
+                p.stockStatus === 'out-of-stock'
+                  ? 'Out of stock'
+                  : cart.isBusy(p.id)
+                    ? 'Adding…'
+                    : 'Add to cart'
+              }}
             </button>
           </div>
-          <p id="cart-note" class="basis-full text-sm text-muted">
-            The cart is coming in the next update.
-          </p>
+          @if (cart.quantityOf(p.id) > 0) {
+            <p class="basis-full text-sm text-muted">
+              {{ cart.quantityOf(p.id) }} in your cart ·
+              <a routerLink="/cart" class="font-semibold text-accent underline underline-offset-4"
+                >View cart</a
+              >
+            </p>
+          }
         </form>
 
         <div class="mt-4 border-t border-border pt-4">

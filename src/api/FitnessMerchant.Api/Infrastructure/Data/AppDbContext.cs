@@ -1,3 +1,4 @@
+using FitnessMerchant.Api.Domain.Carts;
 using FitnessMerchant.Api.Domain.Catalog;
 using FitnessMerchant.Api.Domain.Media;
 using FitnessMerchant.Api.Infrastructure.Identity;
@@ -14,6 +15,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Image> Images => Set<Image>();
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

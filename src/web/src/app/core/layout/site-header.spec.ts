@@ -49,7 +49,7 @@ describe('SiteHeader', () => {
   it('returns focus to the menu button on Escape even if another control had focus when it opened', async () => {
     // Regression: the focus trap's auto-capture restored focus to the previously focused element
     // after closing, overriding the explicit return to the menu button.
-    element.querySelector<HTMLAnchorElement>('a[aria-label="Cart"]')!.focus();
+    element.querySelector<HTMLAnchorElement>('a[href="/cart"]')!.focus();
     menuButton().click();
     await fixture.whenStable();
 
