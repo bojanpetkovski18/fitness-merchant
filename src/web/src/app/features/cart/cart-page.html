@@ -1,0 +1,182 @@
+<div class="mx-auto max-w-7xl px-4 py-8 md:py-10">
+  <h1 class="fm-display text-4xl md:text-5xl">Your cart</h1>
+
+  @let cart = store.cart();
+  @if (store.status() === 'error' && cart.lines.length === 0) {
+    <div class="mt-8">
+      <app-error-state title="Couldn't load your cart" (retry)="store.load()" />
+    </div>
+  } @else if (store.status() === 'loading' && cart.lines.length === 0) {
+    <div role="status" class="mt-8 animate-pulse space-y-3" aria-label="Loading your cart">
+      @for (i of [1, 2]; track i) {
+        <div class="h-28 rounded-xl bg-surface-2"></div>
+      }
+    </div>
+  } @else if (cart.lines.length === 0) {
+    <div class="mt-8">
+      <app-empty-state
+        title="Your cart is empty"
+        message="Find something you like and add it here."
+      >
+        <a routerLink="/supplements" class="rounded-md bg-accent px-4 py-2 font-bold text-on-accent"
+          >Shop supplements</a
+        >
+        <a routerLink="/gear" class="rounded-md border border-border px-4 py-2 font-bold"
+          >Shop gear</a
+        >
+      </app-empty-state>
+    </div>
+  } @else {
+    <div class="mt-8 grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
+      <section aria-labelledby="items-heading">
+        <h2 id="items-heading" class="sr-only">Items</h2>
+        <ul class="divide-y divide-border rounded-xl border border-border bg-surface">
+          @for (line of cart.lines; track line.productId) {
+            <li class="flex gap-4 p-4" [attr.aria-busy]="store.isBusy(line.productId)">
+              <img
+                [src]="line.imageUrl"
+                alt=""
+                width="800"
+                height="800"
+                class="size-20 shrink-0 rounded-lg object-cover md:size-24"
+                [class.opacity-50]="line.issue === 'unavailable' || line.issue === 'out-of-stock'"
+              />
+              <div class="flex min-w-0 flex-1 flex-col gap-2">
+                <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-muted">
+                      {{ line.brandName }}
+                    </p>
+                    <a
+                      [routerLink]="['/products', line.slug]"
+                      class="font-bold hover:text-accent"
+                      >{{ line.name }}</a
+                    >
+                    <app-price-tag
+                      [price]="line.price"
+                      [salePrice]="line.unitPrice"
+                      [discountPercent]="line.discountPercent"
+                    />
+                  </div>
+                  <p class="font-black">
+                    <span class="sr-only">Line total </span>{{ line.lineTotal | currency: 'EUR' }}
+                  </p>
+                </div>
+
+                @if (issueText(line); as issue) {
+                  <p class="text-sm font-semibold text-danger">
+                    {{ issue }}
+                    @if (line.issue === 'exceeds-stock') {
+                      <button
+                        type="button"
+                        class="ml-1 underline underline-offset-4"
+                        (click)="store.setQuantity(line.productId, line.maxQuantity)"
+                      >
+                        Update to {{ line.maxQuantity
+                        }}<span class="sr-only"> for {{ line.name }}</span>
+                      </button>
+                    }
+                  </p>
+                }
+
+                <div class="flex flex-wrap items-center gap-3">
+                  @if (line.issue !== 'unavailable' && line.issue !== 'out-of-stock') {
+                    <div class="flex items-center rounded-md border border-border">
+                      <button
+                        type="button"
+                        class="px-3 py-1.5 text-lg font-bold disabled:opacity-40"
+                        [disabled]="line.quantity <= 1 || store.isBusy(line.productId)"
+                        [attr.aria-label]="'Decrease quantity of ' + line.name"
+                        (click)="setQuantity(line, line.quantity - 1)"
+                      >
+                        −
+                      </button>
+                      <label class="sr-only" [for]="'qty-' + line.productId"
+                        >Quantity of {{ line.name }}</label
+                      >
+                      <input
+                        [id]="'qty-' + line.productId"
+                        type="number"
+                        min="1"
+                        [max]="maxFor(line)"
+                        [value]="line.quantity"
+                        (change)="setQuantity(line, +$any($event.target).value)"
+                        class="w-12 bg-transparent py-1.5 text-center"
+                      />
+                      <button
+                        type="button"
+                        class="px-3 py-1.5 text-lg font-bold disabled:opacity-40"
+                        [disabled]="line.quantity >= maxFor(line) || store.isBusy(line.productId)"
+                        [attr.aria-label]="'Increase quantity of ' + line.name"
+                        (click)="setQuantity(line, line.quantity + 1)"
+                      >
+                        +
+                      </button>
+                    </div>
+                  }
+                  <button
+                    type="button"
+                    class="text-sm font-semibold text-muted underline-offset-4 hover:text-fg hover:underline"
+                    [attr.aria-label]="'Remove ' + line.name + ' from cart'"
+                    (click)="store.remove(line.productId)"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+        <button
+          type="button"
+          class="mt-4 text-sm font-semibold text-muted underline-offset-4 hover:text-danger hover:underline"
+          (click)="clear()"
+        >
+          Empty cart
+        </button>
+      </section>
+
+      <aside
+        aria-labelledby="summary-heading"
+        class="rounded-xl border border-border bg-surface p-5 lg:sticky lg:top-20"
+      >
+        <h2 id="summary-heading" class="fm-display text-xl">Order summary</h2>
+        <dl class="mt-4 space-y-2 text-sm">
+          <div class="flex justify-between">
+            <dt>Subtotal ({{ cart.itemCount }} {{ cart.itemCount === 1 ? 'item' : 'items' }})</dt>
+            <dd>{{ cart.subtotal | currency: 'EUR' }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt>Shipping</dt>
+            <dd>{{ cart.shipping === 0 ? 'Free' : (cart.shipping | currency: 'EUR') }}</dd>
+          </div>
+          <div class="flex justify-between border-t border-border pt-2 text-base font-black">
+            <dt>Total</dt>
+            <dd>{{ cart.total | currency: 'EUR' }}</dd>
+          </div>
+        </dl>
+        @if (cart.amountToFreeShipping > 0 && cart.subtotal > 0) {
+          <p class="mt-3 text-sm text-muted">
+            Add {{ cart.amountToFreeShipping | currency: 'EUR' }} more for free shipping.
+          </p>
+        }
+        <p class="mt-2 text-xs text-muted">Prices include VAT.</p>
+
+        @if (store.hasBlockingIssues()) {
+          <p id="checkout-blocked" class="mt-4 text-sm font-semibold text-danger">
+            Update or remove the highlighted items to continue.
+          </p>
+        }
+        <a
+          routerLink="/checkout"
+          class="mt-4 block rounded-md bg-accent px-4 py-3 text-center font-bold text-on-accent hover:bg-accent-strong aria-disabled:pointer-events-none aria-disabled:opacity-50"
+          [attr.aria-disabled]="store.hasBlockingIssues() ? 'true' : null"
+          [attr.aria-describedby]="store.hasBlockingIssues() ? 'checkout-blocked' : null"
+          [attr.tabindex]="store.hasBlockingIssues() ? -1 : null"
+        >
+          {{ session.isSignedIn() ? 'Proceed to checkout' : 'Sign in to check out' }}
+        </a>
+      </aside>
+    </div>
+  }
+</div>

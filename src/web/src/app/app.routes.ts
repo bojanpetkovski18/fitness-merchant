@@ -54,7 +54,11 @@ export const routes: Routes = [
     title: 'Brand',
     loadComponent: () => import('./features/catalog/brand-pages').then((m) => m.BrandPage),
   },
-  planned('cart', 'Cart', 'M05'),
+  {
+    path: 'cart',
+    title: 'Cart',
+    loadComponent: () => import('./features/cart/cart-page').then((m) => m.CartPage),
+  },
   planned('checkout', 'Checkout', 'M06', authGuard),
   planned('orders/:number/confirmation', 'Order confirmation', 'M06', authGuard),
   {

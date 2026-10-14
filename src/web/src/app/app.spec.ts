@@ -93,11 +93,11 @@ describe('Routes', () => {
 
   it('renders a planned page with its heading and milestone from route data', async () => {
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/cart');
+    await harness.navigateByUrl('/about');
 
     const page = harness.routeNativeElement;
-    expect(page?.querySelector('h1')?.textContent).toContain('Cart');
-    expect(page?.textContent).toContain('Coming in M05');
-    expect(TestBed.inject(Title).getTitle()).toBe('Cart · Fitness Merchant');
+    expect(page?.querySelector('h1')?.textContent).toContain('About');
+    expect(page?.textContent).toContain('Coming in M12');
+    expect(TestBed.inject(Title).getTitle()).toBe('About · Fitness Merchant');
   });
 });

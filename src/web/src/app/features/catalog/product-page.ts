@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, input, linkedSignal } from '@angul
 import { Meta, Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { siteName } from '../../core/app-title-strategy';
+import { CartStore } from '../../core/cart/cart.store';
 import { ProductCard, ProductDetail } from '../../core/catalog/catalog.models';
 import { PriceTag } from '../../shared/catalog/price-tag';
 import { ProductGrid } from '../../shared/catalog/product-grid';
@@ -40,6 +41,8 @@ export class ProductPage {
     return error instanceof HttpErrorResponse && error.status === 404;
   });
 
+  protected readonly cart = inject(CartStore);
+
   /** Resets to 1 whenever another product is shown. */
   protected readonly quantity = linkedSignal({ source: this.slug, computation: () => 1 });
 
@@ -58,6 +61,12 @@ export class ProductPage {
         title.setTitle(`Product not found · ${siteName}`);
       }
     });
+  }
+
+  protected async addToCart(product: ProductDetail): Promise<void> {
+    if (await this.cart.add(product, this.quantity())) {
+      this.quantity.set(1);
+    }
   }
 
   protected setQuantity(value: number, max: number): void {

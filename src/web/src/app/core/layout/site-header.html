@@ -62,8 +62,8 @@
         routerLink="/cart"
         routerLinkActive
         ariaCurrentWhenActive="page"
-        aria-label="Cart"
-        class="grid size-10 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
+        [attr.aria-label]="cartLabel()"
+        class="relative grid size-10 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
       >
         <svg
           aria-hidden="true"
@@ -77,6 +77,13 @@
           <circle cx="9" cy="20" r="1.25" />
           <circle cx="17" cy="20" r="1.25" />
         </svg>
+        @if (cart.itemCount() > 0) {
+          <span
+            aria-hidden="true"
+            class="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-xs font-black text-on-accent"
+            >{{ cart.itemCount() > 99 ? '99+' : cart.itemCount() }}</span
+          >
+        }
       </a>
 
       @if (session.user(); as user) {

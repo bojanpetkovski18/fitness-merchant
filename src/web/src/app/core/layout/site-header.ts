@@ -6,6 +6,7 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  computed,
   inject,
   signal,
   viewChild,
@@ -14,6 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
 import { SessionStore } from '../auth/session.store';
+import { CartStore } from '../cart/cart.store';
 import { ThemeService } from '../theme/theme.service';
 
 interface NavLink {
@@ -36,6 +38,12 @@ const desktopQuery = '(min-width: 48rem)';
 export class SiteHeader {
   protected readonly theme = inject(ThemeService);
   protected readonly session = inject(SessionStore);
+  protected readonly cart = inject(CartStore);
+  /** The badge is decorative; the link name carries the count for screen readers. */
+  protected readonly cartLabel = computed(() => {
+    const count = this.cart.itemCount();
+    return count === 0 ? 'Cart, empty' : `Cart, ${count} ${count === 1 ? 'item' : 'items'}`;
+  });
   private readonly router = inject(Router);
   protected readonly menuOpen = signal(false);
   private readonly menuButton = viewChild.required<ElementRef<HTMLButtonElement>>('menuButton');
