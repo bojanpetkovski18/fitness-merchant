@@ -111,7 +111,71 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/register-page').then((m) => m.RegisterPage),
   },
-  planned('admin', 'Admin', 'M09', adminGuard),
+  {
+    path: 'admin',
+    // Both guards: canActivateChild re-checks on moves inside the area (e.g. after a role change elsewhere).
+    canActivate: [adminGuard],
+    canActivateChild: [adminGuard],
+    loadComponent: () => import('./features/admin/admin-layout').then((m) => m.AdminLayout),
+    children: [
+      // The dashboard takes this path in M10.
+      { path: '', pathMatch: 'full', redirectTo: 'products' },
+      {
+        path: 'products',
+        title: 'Admin · Products',
+        loadComponent: () =>
+          import('./features/admin/admin-products-page').then((m) => m.AdminProductsPage),
+      },
+      {
+        path: 'products/new',
+        title: 'Admin · New product',
+        loadComponent: () =>
+          import('./features/admin/admin-product-form-page').then((m) => m.AdminProductFormPage),
+      },
+      {
+        path: 'products/:id',
+        title: 'Admin · Edit product',
+        loadComponent: () =>
+          import('./features/admin/admin-product-form-page').then((m) => m.AdminProductFormPage),
+      },
+      {
+        path: 'categories',
+        title: 'Admin · Categories',
+        loadComponent: () =>
+          import('./features/admin/admin-taxonomy-pages').then((m) => m.AdminCategoriesPage),
+      },
+      {
+        path: 'categories/new',
+        title: 'Admin · New category',
+        loadComponent: () =>
+          import('./features/admin/admin-taxonomy-pages').then((m) => m.AdminCategoryFormPage),
+      },
+      {
+        path: 'categories/:id',
+        title: 'Admin · Edit category',
+        loadComponent: () =>
+          import('./features/admin/admin-taxonomy-pages').then((m) => m.AdminCategoryFormPage),
+      },
+      {
+        path: 'brands',
+        title: 'Admin · Brands',
+        loadComponent: () =>
+          import('./features/admin/admin-taxonomy-pages').then((m) => m.AdminBrandsPage),
+      },
+      {
+        path: 'brands/new',
+        title: 'Admin · New brand',
+        loadComponent: () =>
+          import('./features/admin/admin-taxonomy-pages').then((m) => m.AdminBrandFormPage),
+      },
+      {
+        path: 'brands/:id',
+        title: 'Admin · Edit brand',
+        loadComponent: () =>
+          import('./features/admin/admin-taxonomy-pages').then((m) => m.AdminBrandFormPage),
+      },
+    ],
+  },
   planned('about', 'About', 'M12'),
   planned('contact', 'Contact', 'M12'),
   {
