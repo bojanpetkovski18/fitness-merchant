@@ -13,13 +13,24 @@ public sealed partial class DemoUserSeeder(
     TimeProvider time,
     ILogger<DemoUserSeeder> logger)
 {
-    public async Task SeedAsync()
+    public async Task SeedAsync() => await SeedAsync(restore: false);
+
+    /// <param name="restore">
+    /// The demo reset: an existing demo account gets its name and role back and any lockout cleared. The password is
+    /// not touched; demo mode does not let anyone change it.
+    /// </param>
+    public async Task SeedAsync(bool restore)
     {
-        await EnsureUserAsync("DEMO_ADMIN", "Demo Admin", Roles.Admin);
-        await EnsureUserAsync("DEMO_CUSTOMER", "Demo Customer", Roles.Customer);
+        await EnsureUserAsync("DEMO_ADMIN", "Demo Admin", Roles.Admin, restore);
+        await EnsureUserAsync("DEMO_CUSTOMER", "Demo Customer", Roles.Customer, restore);
     }
 
-    private async Task EnsureUserAsync(string prefix, string displayName, string role)
+    /// <summary>The configured demo emails (normalized), for the reset and for demo-mode guards.</summary>
+    public static IReadOnlyList<string> DemoEmails(IConfiguration configuration) =>
+        [.. new[] { configuration["DEMO_ADMIN_EMAIL"], configuration["DEMO_CUSTOMER_EMAIL"] }
+            .Where(e => !string.IsNullOrWhiteSpace(e)).Select(e => e!.Trim().ToUpperInvariant())];
+
+    private async Task EnsureUserAsync(string prefix, string displayName, string role, bool restore)
     {
         var email = configuration[$"{prefix}_EMAIL"];
         var password = configuration[$"{prefix}_PASSWORD"];
@@ -29,8 +40,19 @@ public sealed partial class DemoUserSeeder(
             return;
         }
 
-        if (await users.FindByEmailAsync(email) is not null)
+        if (await users.FindByEmailAsync(email) is { } existing)
         {
+            if (restore)
+            {
+                existing.DisplayName = displayName;
+                await users.UpdateAsync(existing);
+                await users.SetLockoutEndDateAsync(existing, null);
+                await users.ResetAccessFailedCountAsync(existing);
+                if (!await users.IsInRoleAsync(existing, role))
+                {
+                    await users.AddToRoleAsync(existing, role);
+                }
+            }
             return;
         }
 

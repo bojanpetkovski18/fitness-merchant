@@ -94,7 +94,7 @@ public sealed partial class ReviewSeeder(AppDbContext db, TimeProvider time, ILo
             });
         }
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await JoinableTransaction.BeginAsync(db, cancellationToken);
         db.Reviews.AddRange(reviews);
         await db.SaveChangesAsync(cancellationToken);
         var productIds = reviews.Select(r => r.ProductId).Distinct().ToList();

@@ -26,6 +26,9 @@ public sealed class RateLimitOptions
 
     /// <summary>Review posts per client IP per minute; a buyer writes a handful at most.</summary>
     public int ReviewPermitLimit { get; init; } = 10;
+
+    /// <summary>Demo resets per client IP per minute; each one rebuilds the whole data set.</summary>
+    public int DemoResetPermitLimit { get; init; } = 2;
 }
 
 public static class RateLimiting
@@ -36,6 +39,7 @@ public static class RateLimiting
     public const string UploadPolicy = "upload";
     public const string ExportPolicy = "export";
     public const string ReviewPolicy = "review";
+    public const string DemoResetPolicy = "demo-reset";
 
     public static IServiceCollection AddAppRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
@@ -114,6 +118,15 @@ public static class RateLimiting
                 _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = options.ReviewPermitLimit,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+
+            limiter.AddPolicy(DemoResetPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = options.DemoResetPermitLimit,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));

@@ -54,7 +54,7 @@ public sealed partial class OrderSeeder(AppDbContext db, TimeProvider time, ILog
         var random = new Random(20261014);
         var customerRole = Roles.All.Single(r => r.Name == Roles.Customer).Id;
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await JoinableTransaction.BeginAsync(db, cancellationToken);
 
         var users = Customers.Select((c, index) =>
         {

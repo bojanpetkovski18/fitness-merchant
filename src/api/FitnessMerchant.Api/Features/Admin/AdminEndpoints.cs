@@ -26,11 +26,14 @@ public static class AdminEndpoints
         .AddScoped<ExportOrdersHandler>()
         .AddScoped<GetDashboardQuery>()
         .AddScoped<ListAdminReviewsQuery>()
-        .AddScoped<SetReviewVisibilityHandler>();
+        .AddScoped<SetReviewVisibilityHandler>()
+        .AddScoped<DemoResetService>();
 
     public static IServiceCollection AddAdminOptions(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ExportOptions>(configuration.GetSection(ExportOptions.Section));
+        services.AddSingleton(DemoOptions.From(configuration));
+        services.AddHostedService<DemoResetWorker>();
         return services;
     }
 
@@ -88,6 +91,12 @@ public static class AdminEndpoints
         reviews.MapGet("", (string? status, int? page, ListAdminReviewsQuery query, CancellationToken ct) => query.ExecuteAsync(status, page, ct));
         reviews.MapPut("/{id:guid}/visibility", (Guid id, ReviewVisibilityRequest request, ClaimsPrincipal user, SetReviewVisibilityHandler handler, CancellationToken ct) =>
             handler.ExecuteAsync(id, user.GetUserId(), request, ct));
+
+        // Only exists in demo mode: anywhere else the route answers 404, like any unknown admin route.
+        admin.MapPost("/demo/reset", async (DemoOptions demo, DemoResetService reset, CancellationToken ct) =>
+                demo.Enabled ? Results.Ok(await reset.ResetAsync(ct)) : Results.NotFound())
+            .WithTags("Admin: demo")
+            .RequireRateLimiting(RateLimiting.DemoResetPolicy);
 
         admin.MapGet("/dashboard", (string? from, string? to, GetDashboardQuery query, CancellationToken ct) => query.ExecuteAsync(from, to, ct))
             .WithTags("Admin: dashboard");

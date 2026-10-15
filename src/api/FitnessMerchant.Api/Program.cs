@@ -8,6 +8,7 @@ using FitnessMerchant.Api.Features.Cart;
 using FitnessMerchant.Api.Features.Catalog;
 using FitnessMerchant.Api.Features.Health;
 using FitnessMerchant.Api.Features.Images;
+using FitnessMerchant.Api.Features.Meta;
 using FitnessMerchant.Api.Features.Orders;
 using FitnessMerchant.Api.Features.Reviews;
 using FitnessMerchant.Api.Infrastructure.Data;
@@ -69,6 +70,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthEndpoints();
+app.MapMetaEndpoints();
 app.MapImageEndpoints();
 app.MapAuthEndpoints();
 app.MapAccountEndpoints();
