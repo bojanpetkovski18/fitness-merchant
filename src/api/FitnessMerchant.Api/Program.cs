@@ -35,6 +35,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddValidation();
 builder.Services.AddOpenApi();
 builder.Services.AddAppForwardedHeaders(builder.Configuration);
+builder.Services.AddAppSpa();
 builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.AddAppDatabase();
 builder.AddAppAuth();
@@ -57,6 +58,7 @@ app.UseAppForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseAppSpaFiles();
 app.UseRateLimiter();
 app.UseAppAuth();
 
@@ -75,6 +77,9 @@ app.MapCartEndpoints();
 app.MapOrderEndpoints();
 app.MapReviewEndpoints();
 app.MapAdminEndpoints();
+
+// Last: anything still unmatched outside /api and /health is a client-side route of the SPA.
+app.MapAppSpaFallback();
 
 // Test seam: integration tests register extra endpoints (e.g. an admin-only probe). Production registers none.
 foreach (var mapper in app.Services.GetServices<IEndpointMapper>())
