@@ -24,7 +24,9 @@ public static class AdminEndpoints
         .AddScoped<GetAdminOrderQuery>()
         .AddScoped<ChangeOrderStatusHandler>()
         .AddScoped<ExportOrdersHandler>()
-        .AddScoped<GetDashboardQuery>();
+        .AddScoped<GetDashboardQuery>()
+        .AddScoped<ListAdminReviewsQuery>()
+        .AddScoped<SetReviewVisibilityHandler>();
 
     public static IServiceCollection AddAdminOptions(this IServiceCollection services, IConfiguration configuration)
     {
@@ -81,6 +83,11 @@ public static class AdminEndpoints
             await query.ExecuteAsync(number, ct) is { } order ? Results.Ok(order) : Results.NotFound());
         orders.MapPost("/{number}/status", (string number, ChangeStatusRequest request, ClaimsPrincipal user, ChangeOrderStatusHandler handler, CancellationToken ct) =>
             handler.ExecuteAsync(number, user.GetUserId(), request, ct));
+
+        var reviews = admin.MapGroup("/reviews").WithTags("Admin: reviews");
+        reviews.MapGet("", (string? status, int? page, ListAdminReviewsQuery query, CancellationToken ct) => query.ExecuteAsync(status, page, ct));
+        reviews.MapPut("/{id:guid}/visibility", (Guid id, ReviewVisibilityRequest request, ClaimsPrincipal user, SetReviewVisibilityHandler handler, CancellationToken ct) =>
+            handler.ExecuteAsync(id, user.GetUserId(), request, ct));
 
         admin.MapGet("/dashboard", (string? from, string? to, GetDashboardQuery query, CancellationToken ct) => query.ExecuteAsync(from, to, ct))
             .WithTags("Admin: dashboard");

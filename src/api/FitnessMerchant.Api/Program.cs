@@ -9,6 +9,7 @@ using FitnessMerchant.Api.Features.Catalog;
 using FitnessMerchant.Api.Features.Health;
 using FitnessMerchant.Api.Features.Images;
 using FitnessMerchant.Api.Features.Orders;
+using FitnessMerchant.Api.Features.Reviews;
 using FitnessMerchant.Api.Infrastructure.Data;
 using FitnessMerchant.Api.Infrastructure.Identity;
 using FitnessMerchant.Api.Infrastructure.Payments;
@@ -41,6 +42,7 @@ builder.Services.AddAccountFeature();
 builder.Services.AddCatalogFeature();
 builder.Services.AddCartFeature();
 builder.Services.AddOrdersFeature();
+builder.Services.AddReviewsFeature();
 builder.Services.AddAdminFeature();
 builder.Services.AddAdminOptions(builder.Configuration);
 builder.Services.AddPayments(builder.Configuration);
@@ -69,6 +71,7 @@ app.MapAccountEndpoints();
 app.MapCatalogEndpoints();
 app.MapCartEndpoints();
 app.MapOrderEndpoints();
+app.MapReviewEndpoints();
 app.MapAdminEndpoints();
 
 // Test seam: integration tests register extra endpoints (e.g. an admin-only probe). Production registers none.

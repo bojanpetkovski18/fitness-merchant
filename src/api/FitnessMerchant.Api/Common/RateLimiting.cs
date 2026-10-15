@@ -23,6 +23,9 @@ public sealed class RateLimitOptions
 
     /// <summary>Admin CSV exports per client IP per minute; each one streams up to 10,000 rows.</summary>
     public int ExportPermitLimit { get; init; } = 10;
+
+    /// <summary>Review posts per client IP per minute; a buyer writes a handful at most.</summary>
+    public int ReviewPermitLimit { get; init; } = 10;
 }
 
 public static class RateLimiting
@@ -32,6 +35,7 @@ public static class RateLimiting
     public const string CheckoutPolicy = "checkout";
     public const string UploadPolicy = "upload";
     public const string ExportPolicy = "export";
+    public const string ReviewPolicy = "review";
 
     public static IServiceCollection AddAppRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
@@ -101,6 +105,15 @@ public static class RateLimiting
                 _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = options.ExportPermitLimit,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+
+            limiter.AddPolicy(ReviewPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = options.ReviewPermitLimit,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));
