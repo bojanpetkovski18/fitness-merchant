@@ -412,3 +412,29 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - While a new query loads, the previous rows stay on screen (`linkedSignal`). Otherwise the table vanished and took keyboard focus with it: found in the browser pass, with a regression test written first.
   - The product form maps server field errors to inputs. A 409 shows an alert whose "Reload latest version" button gets focus.
   - The image picker uploads with progress and a preview, or chooses from a paged library dialog.
+
+## D027: Admin orders, dashboard and CSV export (M10)
+- **Days are UTC.** `from` and `to` are inclusive `yyyy-MM-dd` dates turned into `[from 00:00Z, to+1 00:00Z)`. The store has no business time zone yet; a deployed demo in one market could switch to its zone in one place (`DateRange`). The dashboard defaults to the last 30 days, allows at most 366, and refuses an inverted range. The order list has no date filter until one is given.
+- **What counts as revenue:** orders that are Paid, Shipped or Delivered, by the day they were *placed*, using the order total (shipping included). Pending and cancelled orders never count. AOV = revenue / orders, rounded half away from zero.
+- **SQL does the maths:**
+  - Totals and top products are grouped LINQ.
+  - Revenue per day is one interpolated `SqlQuery` over `generate_series(from, to, '1 day')`, left-joined to the counted orders, so empty days come back as 0 instead of being missing. The dates are parameters; the statuses are fixed literals.
+  - An integration test compares every number with independently written SQL over the seeded history. A second test uses a small known dataset on fixed future dates (exact totals, a 23:59 UTC edge, zero-filled days).
+- **Top products:** one list of 5, ranked by units then revenue, showing both. Names come from the current product row.
+- **Low stock:** active products with 5 or fewer units left, the 20 lowest.
+- **Status changes:**
+  - Only the domain state machine decides what is allowed. The admin detail response includes `allowedTransitions`, so the UI never offers a refused move.
+  - A move that is no longer allowed (another admin was first) is 409 `invalid-transition` with the moves allowed now. A concurrent write is caught by xmin (409 `concurrent-change`).
+  - Every change records the admin's user ID and an optional note (500 characters).
+  - Admin cancel restocks in the same transaction, with reason `admin`.
+  - Admins may also mark an awaiting-payment order as paid (allowed by the state machine; for payments confirmed outside the gateway).
+- **CSV export:**
+  - One row per order, streamed with a UTF-8 BOM and CRLF records.
+  - RFC 4180 quoting; text cells starting with `= + - @`, tab or CR get a leading `'` (mutation-checked).
+  - Numbers are written raw in the invariant culture, because they come from us, not from users.
+  - Both dates are required. Over 10,000 rows (`Export__MaxRows`) is a 400 `too-many-rows`. Rate-limited to 10 per minute (`RateLimiting__ExportPermitLimit`).
+  - The UI downloads it as a blob, so a refusal shows its problem title instead of saving an error file.
+- **Chart: hand-rolled SVG, no library.** One bar per day in a 100-unit view box.
+  - The SVG is `role="img"` with a summary label (days, highest day). The full numbers are in a "Revenue per day as a table" disclosure right below it, so keyboard and screen-reader users get the same data.
+  - A chart library would be a new dependency (size not measured) for a single bar chart; the whole dashboard chunk is 10.9 kB.
+- **Admin nav:** Dashboard is `/admin` itself (exact path match, query strings ignored). Below `lg` the five tabs wrap inside a `minmax(0, 1fr)` grid column, found at 375 px in the browser pass.
