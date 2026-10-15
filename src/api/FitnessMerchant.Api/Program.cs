@@ -34,6 +34,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower)));
 builder.Services.AddValidation();
 builder.Services.AddOpenApi();
+builder.Services.AddAppForwardedHeaders(builder.Configuration);
 builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.AddAppDatabase();
 builder.AddAppAuth();
@@ -52,6 +53,7 @@ var app = builder.Build();
 
 await app.InitializeDatabaseAsync();
 
+app.UseAppForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseMiddleware<SecurityHeadersMiddleware>();

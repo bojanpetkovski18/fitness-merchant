@@ -38,7 +38,16 @@ public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<stri
             builder.UseSetting(key, value);
         }
 
-        builder.ConfigureTestServices(services => services.AddSingleton<IEndpointMapper, TestEndpoints>());
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<IEndpointMapper, TestEndpoints>();
+            // TestServer requests have no peer address; "Test:RemoteIp" makes every request come from one
+            // (e.g. a reverse proxy), set before the app's own middleware runs.
+            if (settings?.GetValueOrDefault("Test:RemoteIp") is { } remoteIp)
+            {
+                services.AddSingleton<IStartupFilter>(new RemoteIpStartupFilter(IPAddress.Parse(remoteIp)));
+            }
+        });
         builder.ConfigureLogging(logging => logging.AddProvider(Logs).SetMinimumLevel(LogLevel.Debug));
     }
 
@@ -65,6 +74,19 @@ public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<stri
         await client.SignOutAsync();
         (await client.SignInAsync(email)).EnsureSuccessStatusCode();
         return client;
+    }
+
+    private sealed class RemoteIpStartupFilter(IPAddress address) : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            app.Use((context, nextMiddleware) =>
+            {
+                context.Connection.RemoteIpAddress = address;
+                return nextMiddleware(context);
+            });
+            next(app);
+        };
     }
 
     private sealed class TestEndpoints : IEndpointMapper
