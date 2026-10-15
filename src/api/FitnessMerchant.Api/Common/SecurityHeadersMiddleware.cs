@@ -1,8 +1,8 @@
 namespace FitnessMerchant.Api.Common;
 
 /// <summary>
-/// Adds the security headers from SPEC section 9 to every response. The CSP already fits the SPA
-/// this API will serve (D008); it is re-verified against the production build in M13.
+/// Adds the security headers from SPEC section 9 to every response. The production SPA build runs under this
+/// CSP with no violations (K1, M12): no critical-CSS inlining, and no inline style from the CDK media matcher.
 /// </summary>
 public sealed class SecurityHeadersMiddleware(RequestDelegate next, IHostEnvironment environment)
 {
