@@ -296,15 +296,21 @@ describe('Admin pages', () => {
       expect(element.querySelectorAll('th[aria-sort]').length).toBe(1);
       expect(element.querySelector('caption')?.textContent).toContain('Name A–Z');
 
-      nameHeader.querySelector('button')!.click();
+      const sortButton = nameHeader.querySelector('button')!;
+      sortButton.focus();
+      sortButton.click();
+      const resorted = await nextRequest(
+        (r) => r.url === '/api/admin/products' && r.params.get('sort') === 'name-desc',
+      );
       await tick();
       expect(router.url).toContain('sort=name-desc');
       expect(router.url).toContain('q=whey'); // other filters survive a sort change
-      (
-        await nextRequest(
-          (r) => r.url === '/api/admin/products' && r.params.get('sort') === 'name-desc',
-        )
-      ).flush({ items: [], page: 1, pageSize: 20, totalCount: 0 });
+      // While the re-sorted page loads, the old rows stay and so does the focused header button
+      // (keyboard users press Enter again to flip the direction).
+      expect(element.querySelector('table')).not.toBeNull();
+      expect(element.textContent).toContain('updating');
+      expect(document.activeElement).toBe(sortButton);
+      resorted.flush({ items: [], page: 1, pageSize: 20, totalCount: 0 });
       await settle(harness.fixture);
       expect(element.textContent).toContain('No products match');
     });

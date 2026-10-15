@@ -1,7 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { HttpClient, httpResource } from '@angular/common/http';
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -24,6 +24,8 @@ interface Column {
   readonly key: AdminProductSortKey;
   readonly label: string;
   readonly align: 'left' | 'right';
+  /** Hidden below lg, where the admin sidebar leaves the table about 530 px. */
+  readonly wideOnly?: boolean;
 }
 
 const defaultSort = 'updated-desc';
@@ -117,8 +119,7 @@ const defaultSort = 'updated-desc';
     <div class="mt-6">
       @if (products.error()) {
         <app-error-state title="Couldn't load products" (retry)="products.reload()" />
-      } @else if (products.hasValue()) {
-        @let page = products.value();
+      } @else if (shown(); as page) {
         <p role="status" class="mb-3 text-sm text-muted">
           {{ page.totalCount }} {{ page.totalCount === 1 ? 'product' : 'products' }}
           @if (products.isLoading()) {
@@ -138,7 +139,7 @@ const defaultSort = 'updated-desc';
           </app-empty-state>
         } @else {
           <!-- Tablet and desktop: a sortable table. -->
-          <div class="hidden overflow-x-auto rounded-xl border border-border md:block">
+          <div class="relative hidden overflow-x-auto rounded-xl border border-border md:block">
             <table class="w-full text-left text-sm">
               <caption class="sr-only">
                 Products, sorted by
@@ -148,12 +149,15 @@ const defaultSort = 'updated-desc';
               </caption>
               <thead class="bg-surface-2 text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th scope="col" class="w-14 px-3 py-2"><span class="sr-only">Image</span></th>
+                  <th scope="col" class="hidden w-14 px-3 py-2 lg:table-cell">
+                    <span class="sr-only">Image</span>
+                  </th>
                   @for (col of columns; track col.key) {
                     <th
                       scope="col"
                       [attr.aria-sort]="ariaSort(col.key)"
                       [class.text-right]="col.align === 'right'"
+                      [class]="col.wideOnly ? 'hidden lg:table-cell' : ''"
                       class="px-3 py-2"
                     >
                       <button
@@ -175,7 +179,7 @@ const defaultSort = 'updated-desc';
               <tbody class="divide-y divide-border bg-surface">
                 @for (p of page.items; track p.id) {
                   <tr>
-                    <td class="px-3 py-2">
+                    <td class="hidden px-3 py-2 lg:table-cell">
                       @if (p.imageUrl) {
                         <img
                           [src]="p.imageUrl"
@@ -204,7 +208,7 @@ const defaultSort = 'updated-desc';
                     <td class="px-3 py-2 text-right" [class.text-danger]="p.stockQuantity === 0">
                       {{ p.stockQuantity }}
                     </td>
-                    <td class="px-3 py-2 text-xs text-muted">
+                    <td class="hidden px-3 py-2 text-xs text-muted lg:table-cell">
                       <time [attr.datetime]="p.updatedAt">{{
                         p.updatedAt | date: 'mediumDate'
                       }}</time>
@@ -212,9 +216,7 @@ const defaultSort = 'updated-desc';
                     <td class="px-3 py-2">
                       <span
                         class="rounded-full px-2 py-0.5 text-xs font-semibold"
-                        [class]="
-                          p.isActive ? 'bg-success/15 text-success' : 'bg-surface-2 text-muted'
-                        "
+                        [class]="p.isActive ? 'bg-success text-bg' : 'bg-surface-2 text-fg'"
                         >{{ p.isActive ? 'In store' : 'Archived' }}</span
                       >
                     </td>
@@ -331,7 +333,7 @@ export class AdminProductsPage {
     { key: 'sku', label: 'SKU', align: 'left' },
     { key: 'price', label: 'Price', align: 'right' },
     { key: 'stock', label: 'Stock', align: 'right' },
-    { key: 'updated', label: 'Updated', align: 'left' },
+    { key: 'updated', label: 'Updated', align: 'left', wideOnly: true },
   ];
 
   protected readonly sortOptions = [
@@ -360,6 +362,18 @@ export class AdminProductsPage {
       page: Number(this.page()) || 1,
     },
   }));
+
+  /**
+   * The last page received. A new query string starts a new request and the resource drops its value while it
+   * loads; showing the previous rows meanwhile keeps the table, and the focused sort button, in place.
+   */
+  protected readonly shown = linkedSignal<
+    Page<AdminProductRow> | undefined,
+    Page<AdminProductRow> | undefined
+  >({
+    source: () => (this.products.hasValue() ? this.products.value() : undefined),
+    computation: (next, previous) => next ?? previous?.value,
+  });
 
   protected readonly categoryGroups = computed(() => {
     const all = this.categories.hasValue() ? this.categories.value() : [];
