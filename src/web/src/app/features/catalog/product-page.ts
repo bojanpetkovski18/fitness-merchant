@@ -9,6 +9,7 @@ import { PriceTag } from '../../shared/catalog/price-tag';
 import { ProductGrid } from '../../shared/catalog/product-grid';
 import { RatingStars } from '../../shared/catalog/rating-stars';
 import { StockBadge } from '../../shared/catalog/stock-badge';
+import { ProductReviewsSection } from './product-reviews';
 import { EmptyState, ErrorState, ProductGridSkeleton } from '../../shared/ui/states';
 
 @Component({
@@ -22,6 +23,7 @@ import { EmptyState, ErrorState, ProductGridSkeleton } from '../../shared/ui/sta
     ProductGridSkeleton,
     ErrorState,
     EmptyState,
+    ProductReviewsSection,
   ],
   templateUrl: './product-page.html',
 })

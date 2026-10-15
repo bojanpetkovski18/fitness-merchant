@@ -54,5 +54,6 @@ export class AdminLayout {
     { path: '/admin/products', label: 'Products', exact: false },
     { path: '/admin/categories', label: 'Categories', exact: false },
     { path: '/admin/brands', label: 'Brands', exact: false },
+    { path: '/admin/reviews', label: 'Reviews', exact: false },
   ] as const;
 }
