@@ -1,7 +1,15 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Page } from '../../core/catalog/catalog.models';
@@ -12,6 +20,7 @@ import { OrderStatusBadge } from '../../shared/orders/order-status-badge';
 import { confirmAction } from '../../shared/ui/confirm-dialog';
 import { Pagination } from '../../shared/ui/pagination';
 import { EmptyState, ErrorState } from '../../shared/ui/states';
+import { BusyButton } from '../../shared/ui/busy-button';
 
 function isNotFound(error: unknown): boolean {
   return error instanceof HttpErrorResponse && error.status === 404;
@@ -225,7 +234,15 @@ export class OrdersPage {
 
 @Component({
   selector: 'app-order-detail-page',
-  imports: [RouterLink, DatePipe, OrderStatusBadge, OrderSummaryView, EmptyState, ErrorState],
+  imports: [
+    RouterLink,
+    DatePipe,
+    OrderStatusBadge,
+    OrderSummaryView,
+    EmptyState,
+    ErrorState,
+    BusyButton,
+  ],
   template: `
     <a routerLink="/account/orders" class="text-sm font-semibold text-muted hover:text-fg"
       >‹ My orders</a
@@ -250,7 +267,7 @@ export class OrdersPage {
       <p class="mt-1 text-muted">Placed {{ o.placedAt | date: 'medium' }}</p>
 
       <section aria-labelledby="timeline-heading" class="mt-6">
-        <h2 id="timeline-heading" class="font-bold">Status</h2>
+        <h2 id="timeline-heading" tabindex="-1" class="font-bold">Status</h2>
         <ol class="mt-3 space-y-3 border-l-2 border-border pl-4">
           @for (h of o.history; track $index) {
             <li class="relative">
@@ -276,7 +293,7 @@ export class OrdersPage {
         <button
           type="button"
           class="mt-6 rounded-md border border-danger px-5 py-2.5 font-bold text-danger hover:bg-danger hover:text-bg disabled:opacity-60"
-          [disabled]="cancelling()"
+          [appBusy]="cancelling()"
           (click)="cancel(o.number)"
         >
           {{ cancelling() ? 'Cancelling…' : 'Cancel order' }}
@@ -289,6 +306,7 @@ export class OrdersPage {
 })
 export class OrderDetailPage {
   private readonly http = inject(HttpClient);
+  private readonly injector = inject(Injector);
   private readonly dialog = inject(Dialog);
   private readonly toasts = inject(ToastService);
 
@@ -318,6 +336,10 @@ export class OrderDetailPage {
       );
       this.toasts.show(`Order ${number} was cancelled.`);
       this.order.reload();
+      // The cancel button goes away: move focus to the status timeline that now shows "Cancelled".
+      afterNextRender(() => document.getElementById('timeline-heading')?.focus(), {
+        injector: this.injector,
+      });
     } catch (error) {
       this.toasts.error(toApiProblem(error).title);
       this.order.reload();

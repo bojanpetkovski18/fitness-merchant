@@ -85,7 +85,8 @@
                       <button
                         type="button"
                         class="px-3 py-1.5 text-lg font-bold disabled:opacity-40"
-                        [disabled]="line.quantity <= 1 || store.isBusy(line.productId)"
+                        [disabled]="line.quantity <= 1"
+                        [appBusy]="store.isBusy(line.productId)"
                         [attr.aria-label]="'Decrease quantity of ' + line.name"
                         (click)="setQuantity(line, line.quantity - 1)"
                       >
@@ -106,7 +107,8 @@
                       <button
                         type="button"
                         class="px-3 py-1.5 text-lg font-bold disabled:opacity-40"
-                        [disabled]="line.quantity >= maxFor(line) || store.isBusy(line.productId)"
+                        [disabled]="line.quantity >= maxFor(line)"
+                        [appBusy]="store.isBusy(line.productId)"
                         [attr.aria-label]="'Increase quantity of ' + line.name"
                         (click)="setQuantity(line, line.quantity + 1)"
                       >

@@ -70,8 +70,8 @@
 
     <button
       type="submit"
-      [disabled]="pending()"
-      class="w-full rounded-md bg-accent px-4 py-3 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60"
+      [appBusy]="pending()"
+      class="w-full rounded-md bg-accent px-4 py-3 font-bold text-on-accent hover:bg-accent-strong aria-disabled:opacity-60"
     >
       {{ pending() ? 'Signing in…' : 'Sign in' }}
     </button>

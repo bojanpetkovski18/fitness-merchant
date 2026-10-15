@@ -11,6 +11,7 @@ import { RatingStars } from '../../shared/catalog/rating-stars';
 import { StockBadge } from '../../shared/catalog/stock-badge';
 import { ProductReviewsSection } from './product-reviews';
 import { EmptyState, ErrorState, ProductGridSkeleton } from '../../shared/ui/states';
+import { BusyButton } from '../../shared/ui/busy-button';
 
 @Component({
   selector: 'app-product-page',
@@ -24,6 +25,7 @@ import { EmptyState, ErrorState, ProductGridSkeleton } from '../../shared/ui/sta
     ErrorState,
     EmptyState,
     ProductReviewsSection,
+    BusyButton,
   ],
   templateUrl: './product-page.html',
 })

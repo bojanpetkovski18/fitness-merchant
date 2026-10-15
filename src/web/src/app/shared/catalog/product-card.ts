@@ -5,6 +5,7 @@ import { ProductCard as ProductCardModel } from '../../core/catalog/catalog.mode
 import { PriceTag } from './price-tag';
 import { RatingStars } from './rating-stars';
 import { StockBadge } from './stock-badge';
+import { BusyButton } from '../ui/busy-button';
 
 /**
  * One accessible link per card: the product name is the link, stretched over the card with ::after, so the
@@ -12,7 +13,7 @@ import { StockBadge } from './stock-badge';
  */
 @Component({
   selector: 'app-product-card',
-  imports: [RouterLink, PriceTag, RatingStars, StockBadge],
+  imports: [RouterLink, PriceTag, RatingStars, StockBadge, BusyButton],
   template: `
     @let p = product();
     <article
@@ -60,7 +61,8 @@ import { StockBadge } from './stock-badge';
         <button
           type="button"
           class="relative z-10 mt-2 w-full rounded-md border border-accent px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-on-accent disabled:border-border disabled:text-muted disabled:hover:bg-transparent"
-          [disabled]="p.stockStatus === 'out-of-stock' || cart.isBusy(p.id)"
+          [disabled]="p.stockStatus === 'out-of-stock'"
+          [appBusy]="cart.isBusy(p.id)"
           [attr.aria-label]="
             p.stockStatus === 'out-of-stock'
               ? p.name + ' is sold out'

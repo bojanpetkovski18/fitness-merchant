@@ -26,6 +26,7 @@ import { ToastService } from '../../core/ui/toast.service';
 import { fieldError } from '../../shared/forms/field-error';
 import { confirmAction } from '../../shared/ui/confirm-dialog';
 import { EmptyState, ErrorState } from '../../shared/ui/states';
+import { BusyButton } from '../../shared/ui/busy-button';
 import { ImagePicker } from './image-picker';
 
 const inputClass =
@@ -157,7 +158,7 @@ export class AdminCategoriesPage {
 
 @Component({
   selector: 'app-admin-category-form-page',
-  imports: [ReactiveFormsModule, RouterLink, EmptyState, ErrorState],
+  imports: [ReactiveFormsModule, RouterLink, EmptyState, ErrorState, BusyButton],
   template: `
     <a routerLink="/admin/categories" class="text-sm font-semibold text-muted hover:text-fg"
       >‹ Categories</a
@@ -273,8 +274,8 @@ export class AdminCategoriesPage {
         <div class="flex flex-wrap gap-3">
           <button
             type="submit"
-            [disabled]="pending()"
-            class="rounded-md bg-accent px-5 py-3 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60"
+            [appBusy]="pending()"
+            class="rounded-md bg-accent px-5 py-3 font-bold text-on-accent hover:bg-accent-strong aria-disabled:opacity-60"
           >
             {{ pending() ? 'Saving…' : id() ? 'Save changes' : 'Create category' }}
           </button>
@@ -453,7 +454,7 @@ export class AdminBrandsPage {
 
 @Component({
   selector: 'app-admin-brand-form-page',
-  imports: [ReactiveFormsModule, RouterLink, ImagePicker, EmptyState, ErrorState],
+  imports: [ReactiveFormsModule, RouterLink, ImagePicker, EmptyState, ErrorState, BusyButton],
   template: `
     <a routerLink="/admin/brands" class="text-sm font-semibold text-muted hover:text-fg"
       >‹ Brands</a
@@ -556,8 +557,8 @@ export class AdminBrandsPage {
         <div class="flex flex-wrap gap-3">
           <button
             type="submit"
-            [disabled]="pending()"
-            class="rounded-md bg-accent px-5 py-3 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60"
+            [appBusy]="pending()"
+            class="rounded-md bg-accent px-5 py-3 font-bold text-on-accent hover:bg-accent-strong aria-disabled:opacity-60"
           >
             {{ pending() ? 'Saving…' : id() ? 'Save changes' : 'Create brand' }}
           </button>

@@ -285,12 +285,10 @@
             }
             <button
               type="button"
-              class="mt-6 w-full rounded-md bg-accent px-6 py-3 text-lg font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60 sm:w-auto"
+              class="mt-6 w-full rounded-md bg-accent px-6 py-3 text-lg font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60 aria-disabled:opacity-60 sm:w-auto"
+              [appBusy]="submitting()"
               [disabled]="
-                submitting() ||
-                cart.status() !== 'ready' ||
-                cart.hasBlockingIssues() ||
-                c.lines.length === 0
+                cart.status() !== 'ready' || cart.hasBlockingIssues() || c.lines.length === 0
               "
               (click)="placeOrder()"
             >

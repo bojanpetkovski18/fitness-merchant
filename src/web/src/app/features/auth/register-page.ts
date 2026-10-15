@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { BusyButton } from '../../shared/ui/busy-button';
 import { safeReturnUrl } from '../../core/auth/return-url';
 import { SessionStore } from '../../core/auth/session.store';
 import { ApiProblem, toApiProblem } from '../../core/http/api-problem';
@@ -18,7 +19,7 @@ type Field = 'email' | 'displayName' | 'password';
 
 @Component({
   selector: 'app-register-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, BusyButton],
   templateUrl: './register-page.html',
 })
 export class RegisterPage {

@@ -139,8 +139,11 @@ describe('CheckoutPage', () => {
     const place = button('Place order');
     place.click();
     await settle();
-    expect(place.disabled).toBe(true);
+    // Busy, not disabled (K12): it keeps keyboard focus, and a second press sends nothing.
+    expect(place.getAttribute('aria-disabled')).toBe('true');
     expect(place.textContent).toContain('Placing order…');
+    place.click();
+    await settle();
 
     const request = backend.expectOne('/api/checkout');
     expect(request.request.headers.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/);

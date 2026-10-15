@@ -1,7 +1,16 @@
 import { DIALOG_DATA, Dialog, DialogRef } from '@angular/cdk/dialog';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
-import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
+import {
+  Component,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -18,6 +27,7 @@ import { OrderStatusBadge } from '../../shared/orders/order-status-badge';
 import { Pagination } from '../../shared/ui/pagination';
 import { EmptyState, ErrorState } from '../../shared/ui/states';
 import { OrderSummaryView } from '../orders/order-pages';
+import { BusyButton } from '../../shared/ui/busy-button';
 
 const fieldClass = 'mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2 text-fg';
 
@@ -44,6 +54,7 @@ async function problemTitle(error: unknown): Promise<string> {
     Pagination,
     EmptyState,
     ErrorState,
+    BusyButton,
   ],
   template: `
     <div class="flex flex-wrap items-end justify-between gap-3">
@@ -51,8 +62,8 @@ async function problemTitle(error: unknown): Promise<string> {
       <div class="text-right">
         <button
           type="button"
-          class="rounded-md border border-border px-4 py-2.5 font-bold hover:bg-surface-2 disabled:opacity-60"
-          [disabled]="exporting()"
+          class="rounded-md border border-border px-4 py-2.5 font-bold hover:bg-surface-2 aria-disabled:opacity-60"
+          [appBusy]="exporting()"
           [attr.aria-describedby]="'export-hint'"
           (click)="export()"
         >
@@ -371,7 +382,15 @@ export class StatusChangeDialog {
 
 @Component({
   selector: 'app-admin-order-page',
-  imports: [RouterLink, DatePipe, OrderStatusBadge, OrderSummaryView, EmptyState, ErrorState],
+  imports: [
+    RouterLink,
+    DatePipe,
+    OrderStatusBadge,
+    OrderSummaryView,
+    EmptyState,
+    ErrorState,
+    BusyButton,
+  ],
   template: `
     <a routerLink="/admin/orders" class="text-sm font-semibold text-muted hover:text-fg"
       >‹ Orders</a
@@ -394,7 +413,7 @@ export class StatusChangeDialog {
       </p>
 
       <section aria-labelledby="actions-heading" class="mt-6">
-        <h2 id="actions-heading" class="font-bold">Actions</h2>
+        <h2 id="actions-heading" tabindex="-1" class="font-bold">Actions</h2>
         @if (o.allowedTransitions.length === 0) {
           <p class="mt-2 text-sm text-muted">
             This order is {{ statusLabel(o.order.status).toLowerCase() }}; nothing more can change.
@@ -404,13 +423,13 @@ export class StatusChangeDialog {
             @for (to of o.allowedTransitions; track to) {
               <button
                 type="button"
-                class="rounded-md px-4 py-2 font-bold disabled:opacity-60"
+                class="rounded-md px-4 py-2 font-bold aria-disabled:opacity-60"
                 [class]="
                   to === 'cancelled'
                     ? 'border border-danger text-danger hover:bg-danger hover:text-bg'
                     : 'bg-accent text-on-accent hover:bg-accent-strong'
                 "
-                [disabled]="pending()"
+                [appBusy]="pending()"
                 (click)="change(o.order.number, to)"
               >
                 {{ transitionLabel(to) }}
@@ -452,6 +471,7 @@ export class StatusChangeDialog {
 })
 export class AdminOrderPage {
   private readonly http = inject(HttpClient);
+  private readonly injector = inject(Injector);
   private readonly dialog = inject(Dialog);
   private readonly toasts = inject(ToastService);
 
@@ -495,6 +515,10 @@ export class AdminOrderPage {
         }),
       );
       this.order.set(updated);
+      // The pressed button is replaced by the next moves (or none): keep keyboard focus in the section.
+      afterNextRender(() => document.getElementById('actions-heading')?.focus(), {
+        injector: this.injector,
+      });
       this.toasts.show(
         `${number} is now ${orderStatusLabels[updated.order.status].toLowerCase()}.`,
       );

@@ -110,8 +110,9 @@
           <div>
             <button
               type="submit"
-              [disabled]="p.stockStatus === 'out-of-stock' || cart.isBusy(p.id)"
-              class="rounded-md bg-accent px-6 py-3 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60"
+              [disabled]="p.stockStatus === 'out-of-stock'"
+              [appBusy]="cart.isBusy(p.id)"
+              class="rounded-md bg-accent px-6 py-3 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60 aria-disabled:opacity-60"
             >
               {{
                 p.stockStatus === 'out-of-stock'

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { BusyButton } from '../../shared/ui/busy-button';
 import { safeReturnUrl } from '../../core/auth/return-url';
 import { SessionStore } from '../../core/auth/session.store';
 import { ApiProblem, toApiProblem } from '../../core/http/api-problem';
@@ -16,7 +17,7 @@ import { fieldError } from '../../shared/forms/field-error';
 
 @Component({
   selector: 'app-sign-in-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, BusyButton],
   templateUrl: './sign-in-page.html',
 })
 export class SignInPage {

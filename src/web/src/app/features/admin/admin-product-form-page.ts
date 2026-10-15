@@ -25,6 +25,7 @@ import { ApiProblem, toApiProblem } from '../../core/http/api-problem';
 import { ToastService } from '../../core/ui/toast.service';
 import { fieldError } from '../../shared/forms/field-error';
 import { EmptyState, ErrorState } from '../../shared/ui/states';
+import { BusyButton } from '../../shared/ui/busy-button';
 import { ImagePicker } from './image-picker';
 
 type Field =
@@ -44,7 +45,7 @@ const inputClass =
 /** Create (no id) or edit a product. Edits carry the version they started from; a stale one gets a 409. */
 @Component({
   selector: 'app-admin-product-form-page',
-  imports: [ReactiveFormsModule, RouterLink, ImagePicker, EmptyState, ErrorState],
+  imports: [ReactiveFormsModule, RouterLink, ImagePicker, EmptyState, ErrorState, BusyButton],
   template: `
     <a routerLink="/admin/products" class="text-sm font-semibold text-muted hover:text-fg"
       >‹ Products</a
@@ -309,8 +310,8 @@ const inputClass =
         <div class="flex flex-wrap gap-3">
           <button
             type="submit"
-            [disabled]="pending()"
-            class="rounded-md bg-accent px-5 py-3 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60"
+            [appBusy]="pending()"
+            class="rounded-md bg-accent px-5 py-3 font-bold text-on-accent hover:bg-accent-strong aria-disabled:opacity-60"
           >
             {{ pending() ? 'Saving…' : id() ? 'Save changes' : 'Create product' }}
           </button>

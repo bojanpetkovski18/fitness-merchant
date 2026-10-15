@@ -8,10 +8,11 @@ import { SessionStore } from '../../core/auth/session.store';
 import { PriceTag } from '../../shared/catalog/price-tag';
 import { confirmAction } from '../../shared/ui/confirm-dialog';
 import { EmptyState, ErrorState } from '../../shared/ui/states';
+import { BusyButton } from '../../shared/ui/busy-button';
 
 @Component({
   selector: 'app-cart-page',
-  imports: [RouterLink, CurrencyPipe, PriceTag, EmptyState, ErrorState],
+  imports: [RouterLink, CurrencyPipe, PriceTag, EmptyState, ErrorState, BusyButton],
   templateUrl: './cart-page.html',
 })
 export class CartPage {
