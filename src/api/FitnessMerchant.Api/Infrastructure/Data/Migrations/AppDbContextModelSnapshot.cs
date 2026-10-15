@@ -642,6 +642,68 @@ namespace FitnessMerchant.Api.Infrastructure.Data.Migrations
                     b.ToTable("order_status_changes", (string)null);
                 });
 
+            modelBuilder.Entity("FitnessMerchant.Api.Domain.Reviews.Review", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_hidden");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("title");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reviews");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_reviews_user_id");
+
+                    b.HasIndex("ProductId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reviews_product_id_user_id");
+
+                    b.HasIndex("ProductId", "IsHidden", "CreatedAt")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_reviews_product_id_is_hidden_created_at");
+
+                    b.ToTable("reviews", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_reviews_body", "char_length(body) BETWEEN 10 AND 2000");
+
+                            t.HasCheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_reviews_title", "char_length(title) BETWEEN 3 AND 80");
+                        });
+                });
+
             modelBuilder.Entity("FitnessMerchant.Api.Infrastructure.Identity.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1012,6 +1074,23 @@ namespace FitnessMerchant.Api.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_order_status_changes_orders_order_id");
+                });
+
+            modelBuilder.Entity("FitnessMerchant.Api.Domain.Reviews.Review", b =>
+                {
+                    b.HasOne("FitnessMerchant.Api.Domain.Catalog.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_reviews_products_product_id");
+
+                    b.HasOne("FitnessMerchant.Api.Infrastructure.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_reviews_users_user_id");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>

@@ -191,6 +191,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/admin-taxonomy-pages').then((m) => m.AdminBrandFormPage),
       },
+      {
+        path: 'reviews',
+        title: 'Admin · Reviews',
+        loadComponent: () =>
+          import('./features/admin/admin-reviews-page').then((m) => m.AdminReviewsPage),
+      },
     ],
   },
   planned('about', 'About', 'M12'),

@@ -140,6 +140,8 @@
       </div>
     </article>
 
+    <app-product-reviews [slug]="slug()" (reviewed)="product.reload()" />
+
     <section class="mt-14" aria-labelledby="related-heading">
       <h2 id="related-heading" class="fm-display mb-4 text-2xl">You may also like</h2>
       @if (related.error()) {

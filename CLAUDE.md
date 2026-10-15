@@ -56,7 +56,7 @@ All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.
 
 **API** (`src/api/FitnessMerchant.Api`)
 - `dotnet build FitnessMerchant.slnx`: builds everything; warnings are errors.
-- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`). Integration tests start their own PostgreSQL container through Testcontainers, so Docker must be running; the dev database is not used. About 50 s on M1 after M10 (348 tests).
+- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`). Integration tests start their own PostgreSQL container through Testcontainers, so Docker must be running; the dev database is not used. About 30–50 s on M1 after M11 (356 tests); the time varies with the local Docker daemon.
 - `dotnet test --project tests/FitnessMerchant.Api.IntegrationTests --output Detailed`: one project with per-test timings.
 - `dotnet test --project tests/FitnessMerchant.Api.IntegrationTests -- --filter-class "*AccountTests"`: one test class (`--filter-method "*name*"` for one test; combining both filters matches nothing).
 - `dotnet run --project src/api/FitnessMerchant.Api`: runs the API on `http://localhost:5080`. In Development it reads the repo-root `.env`, applies migrations (`Database__MigrateOnStartup`) and seeds an empty catalog (`Seed__Enabled`). API docs are at `/scalar` and `/openapi/v1.json`. Health: `/health` (includes the DB) and `/health/live`.

@@ -2,6 +2,7 @@ using FitnessMerchant.Api.Domain.Carts;
 using FitnessMerchant.Api.Domain.Catalog;
 using FitnessMerchant.Api.Domain.Media;
 using FitnessMerchant.Api.Domain.Orders;
+using FitnessMerchant.Api.Domain.Reviews;
 using FitnessMerchant.Api.Infrastructure.Data.Configurations;
 using FitnessMerchant.Api.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -22,6 +23,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<OrderStatusChange> OrderStatusChanges => Set<OrderStatusChange>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

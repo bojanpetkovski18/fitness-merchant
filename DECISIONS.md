@@ -438,3 +438,18 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - The SVG is `role="img"` with a summary label (days, highest day). The full numbers are in a "Revenue per day as a table" disclosure right below it, so keyboard and screen-reader users get the same data.
   - A chart library would be a new dependency (size not measured) for a single bar chart; the whole dashboard chunk is 10.9 kB.
 - **Admin nav:** Dashboard is `/admin` itself (exact path match, query strings ignored). Below `lg` the five tabs wrap inside a `minmax(0, 1fr)` grid column, found at 375 px in the browser pass.
+
+## D028: Reviews and ratings (M11)
+- **Eligibility** (SPEC section 5): the user has an order that is Paid, Shipped or Delivered and contains the product. Otherwise the answer is 403 `not-eligible`. One review per user and product (unique index, 409 `already-reviewed`). Archived products cannot be reviewed (404).
+- **The rating is computed, never adjusted:**
+  - After every insert, hide or unhide, one `ExecuteUpdate` sets `RatingCount` and `RatingAverage` from the visible reviews (`round(avg(rating), 2)`), in the same transaction.
+  - The write first locks the product row (`SELECT … FOR UPDATE`). Concurrent reviews of one product then run one after the other, and under READ COMMITTED each recalculation sees every committed review.
+  - **Mutation check:** without the lock, five concurrent posts ended with a count of 1 in 5 of 5 runs; with it, 5 every time.
+- **Text is plain:** title 3–80 and body 10–2000 characters after trimming, stored exactly as written. The SPA renders it through interpolation (escaped), so `<script>` shows as text (web test plus browser check). There is no server-side sanitizing to get wrong or to double-escape.
+- **Privacy:** public responses carry the display name only. Integration tests assert no email address and no `email` field in the JSON. The admin list shows the email, to deal with abuse.
+- **One public call** for the product page, `GET …/reviews`: the summary (with the per-star distribution), a page of 5 newest reviews, and `viewer` (`sign-in`, `not-purchased`, `already-reviewed`, `can-review`). The SPA refetches it when the session changes. Rate limit `review`: 10 posts per minute per IP.
+- **Seed:** reviews only from the fictional seed customers, for products they bought in a paid order, about 65% of those purchases. Ratings lean positive (weights 1/2/5/14/22 for 1–5 stars), texts are invented and generic, dated 2–11 days after the order and never in the future. A test checks that every seeded review has a qualifying order and every product's rating matches SQL.
+- **UI:**
+  - The rating input is five radios in natural order (1 to 5; arrow keys go up), with stars filled up to the choice.
+  - The distribution has visible bars plus text ("5 stars: 12 reviews, 60%").
+  - Admin hide/show buttons stay enabled while saving (`aria-busy` plus a guard against double presses), because disabling them dropped keyboard focus to the page. Found in the browser pass; regression test shown failing on the old code. The same pattern elsewhere is K12.
