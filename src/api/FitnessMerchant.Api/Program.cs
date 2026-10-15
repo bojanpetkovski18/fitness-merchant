@@ -2,6 +2,7 @@ using FitnessMerchant.Api.Common;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FitnessMerchant.Api.Features.Account;
+using FitnessMerchant.Api.Features.Admin;
 using FitnessMerchant.Api.Features.Auth;
 using FitnessMerchant.Api.Features.Cart;
 using FitnessMerchant.Api.Features.Catalog;
@@ -40,6 +41,7 @@ builder.Services.AddAccountFeature();
 builder.Services.AddCatalogFeature();
 builder.Services.AddCartFeature();
 builder.Services.AddOrdersFeature();
+builder.Services.AddAdminFeature();
 builder.Services.AddPayments(builder.Configuration);
 builder.Services.AddScoped<GetImageQuery>();
 
@@ -66,6 +68,7 @@ app.MapAccountEndpoints();
 app.MapCatalogEndpoints();
 app.MapCartEndpoints();
 app.MapOrderEndpoints();
+app.MapAdminEndpoints();
 
 // Test seam: integration tests register extra endpoints (e.g. an admin-only probe). Production registers none.
 foreach (var mapper in app.Services.GetServices<IEndpointMapper>())

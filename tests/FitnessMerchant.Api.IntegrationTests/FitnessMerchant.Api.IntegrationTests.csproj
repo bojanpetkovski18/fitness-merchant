@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Generated test images, shared with the unit tests. -->
+    <Compile Include="..\FitnessMerchant.Api.UnitTests\Images\TestImages.cs" Link="Infrastructure\TestImages.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 
