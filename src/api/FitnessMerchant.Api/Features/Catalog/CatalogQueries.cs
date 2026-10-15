@@ -60,15 +60,23 @@ public sealed class GetDepartmentsQuery(AppDbContext db)
 
 public sealed class ListBrandsQuery(AppDbContext db)
 {
-    public async Task<IReadOnlyList<BrandResponse>> ExecuteAsync(string? slug, CancellationToken cancellationToken)
+    /// <param name="department">
+    /// When given, only brands with active products in that department, counted there (K8: a department page
+    /// should not offer brands that have nothing in it).
+    /// </param>
+    public async Task<IReadOnlyList<BrandResponse>> ExecuteAsync(string? slug, CancellationToken cancellationToken, Department? department = null)
     {
-        var rows = await db.Brands.AsNoTracking()
-            .Where(b => slug == null || b.Slug == slug)
+        var brands = db.Brands.AsNoTracking().Where(b => slug == null || b.Slug == slug);
+        if (department is { } d)
+        {
+            brands = brands.Where(b => b.Products.Any(p => p.IsActive && p.Category.Department == d));
+        }
+        var rows = await brands
             .OrderBy(b => b.Name)
             .Select(b => new
             {
                 b.Slug, b.Name, b.Description, b.AccentColor, b.LogoImageId,
-                ProductCount = b.Products.Count(p => p.IsActive),
+                ProductCount = b.Products.Count(p => p.IsActive && (department == null || p.Category.Department == department)),
             })
             .ToListAsync(cancellationToken);
 
