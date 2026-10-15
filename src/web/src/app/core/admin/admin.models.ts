@@ -1,3 +1,5 @@
+import { Order, OrderStatus } from '../orders/order.models';
+
 /** Shapes of the /api/admin catalog endpoints (Features/Admin/AdminContracts.cs). */
 
 export type Department = 'supplements' | 'gear';
@@ -105,3 +107,75 @@ export type SortDirection = 'asc' | 'desc';
 /** Client-side copy of the upload limit, for an early message; the server checks again. */
 export const maxUploadBytes = 1024 * 1024;
 export const acceptedImageTypes = 'image/png,image/jpeg,image/webp';
+
+export interface AdminOrderRow {
+  readonly number: string;
+  readonly status: OrderStatus;
+  readonly placedAt: string;
+  readonly customerName: string;
+  readonly contactEmail: string;
+  readonly itemCount: number;
+  readonly total: number;
+}
+
+export interface AdminStatusChange {
+  readonly fromStatus: OrderStatus | null;
+  readonly toStatus: OrderStatus;
+  readonly at: string;
+  readonly note: string | null;
+  readonly changedBy: string | null;
+}
+
+export interface AdminOrder {
+  readonly order: Order;
+  readonly customer: { readonly id: string; readonly email: string; readonly displayName: string };
+  readonly allowedTransitions: readonly OrderStatus[];
+  readonly history: readonly AdminStatusChange[];
+}
+
+export interface Dashboard {
+  readonly from: string;
+  readonly to: string;
+  readonly revenue: number;
+  readonly orderCount: number;
+  readonly averageOrderValue: number;
+  readonly revenueByDay: readonly {
+    readonly day: string;
+    readonly revenue: number;
+    readonly orders: number;
+  }[];
+  readonly topProducts: readonly {
+    readonly productId: string;
+    readonly name: string;
+    readonly sku: string;
+    readonly quantity: number;
+    readonly revenue: number;
+  }[];
+  readonly lowStock: readonly {
+    readonly productId: string;
+    readonly name: string;
+    readonly sku: string;
+    readonly stockQuantity: number;
+  }[];
+}
+
+/** What an admin action button says for each target status. */
+export const transitionLabels: Record<OrderStatus, string> = {
+  'pending-payment': 'Mark as awaiting payment',
+  paid: 'Mark as paid',
+  shipped: 'Mark as shipped',
+  delivered: 'Mark as delivered',
+  cancelled: 'Cancel order',
+};
+
+/** A UTC calendar day as the API expects it (yyyy-MM-dd). */
+export function isoDay(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/** The last `days` days ending today (UTC), inclusive. */
+export function lastDays(days: number, today = new Date()): { from: string; to: string } {
+  const from = new Date(today);
+  from.setUTCDate(from.getUTCDate() - (days - 1));
+  return { from: isoDay(from), to: isoDay(today) };
+}
