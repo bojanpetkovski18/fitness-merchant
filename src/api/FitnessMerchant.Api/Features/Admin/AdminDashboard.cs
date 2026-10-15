@@ -72,13 +72,13 @@ public sealed class GetDashboardQuery(AppDbContext db, TimeProvider time)
         var to = range.To;
         var rows = await db.Database.SqlQuery<DayRow>($"""
             SELECT d.day::date AS day,
-                   COALESCE(SUM(o.total), 0) AS revenue,
-                   COUNT(o.id)::int AS orders
+                COALESCE(SUM(o.total), 0) AS revenue,
+                COUNT(o.id)::int AS orders
             FROM generate_series({from}::date, {to}::date, interval '1 day') AS d(day)
             LEFT JOIN orders o
-              ON o.placed_at >= d.day AT TIME ZONE 'UTC'
-             AND o.placed_at < (d.day + interval '1 day') AT TIME ZONE 'UTC'
-             AND o.status IN ('Paid', 'Shipped', 'Delivered')
+                ON o.placed_at >= d.day AT TIME ZONE 'UTC'
+                AND o.placed_at < (d.day + interval '1 day') AT TIME ZONE 'UTC'
+                AND o.status IN ('Paid', 'Shipped', 'Delivered')
             GROUP BY d.day
             ORDER BY d.day
             """).ToListAsync(cancellationToken);
