@@ -54,10 +54,7 @@ interface AdminReview {
         } @else {
           <ul class="space-y-3">
             @for (r of page.items; track r.id) {
-              <li
-                class="rounded-xl border border-border bg-surface p-4"
-                [class.opacity-70]="r.isHidden"
-              >
+              <li class="rounded-xl border border-border bg-surface p-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div class="min-w-0">
                     <p class="text-sm">
@@ -67,8 +64,9 @@ interface AdminReview {
                         >{{ r.productName }}</a
                       >
                       ·
-                      <span class="text-accent" [attr.aria-label]="r.rating + ' out of 5 stars'"
-                        >{{ r.rating }}★</span
+                      <span
+                        >{{ r.rating }}<span aria-hidden="true" class="text-accent">★</span
+                        ><span class="sr-only"> out of 5 stars</span></span
                       >
                       @if (r.isHidden) {
                         ·
@@ -84,13 +82,13 @@ interface AdminReview {
                   </div>
                   <button
                     type="button"
-                    class="shrink-0 rounded-md border px-3 py-1.5 text-sm font-bold disabled:opacity-60"
+                    class="shrink-0 rounded-md border px-3 py-1.5 text-sm font-bold aria-busy:opacity-60"
                     [class]="
                       r.isHidden
                         ? 'border-border hover:bg-surface-2'
                         : 'border-danger text-danger hover:bg-danger/10'
                     "
-                    [disabled]="busy() === r.id"
+                    [attr.aria-busy]="busy() === r.id"
                     (click)="toggle(r)"
                   >
                     {{ r.isHidden ? 'Show again' : 'Hide'
@@ -144,7 +142,9 @@ export class AdminReviewsPage {
     });
   }
 
+  /** The button stays enabled while saving: disabling it would drop keyboard focus to the page. */
   protected async toggle(review: AdminReview): Promise<void> {
+    if (this.busy()) return;
     this.busy.set(review.id);
     try {
       const updated = await firstValueFrom(

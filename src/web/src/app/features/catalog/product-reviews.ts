@@ -221,10 +221,8 @@ const stars = [5, 4, 3, 2, 1] as const;
                       [attr.aria-labelledby]="'review-' + review.id"
                       class="border-b border-border pb-5"
                     >
-                      <p
-                        class="text-accent"
-                        [attr.aria-label]="'Rated ' + review.rating + ' out of 5'"
-                      >
+                      <p class="text-accent">
+                        <span class="sr-only">Rated {{ review.rating }} out of 5</span>
                         <span aria-hidden="true">{{ '★★★★★'.slice(0, review.rating) }}</span
                         ><span aria-hidden="true" class="text-border">{{
                           '★★★★★'.slice(review.rating)
