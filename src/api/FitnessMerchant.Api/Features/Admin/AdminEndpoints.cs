@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using FitnessMerchant.Api.Common;
 using FitnessMerchant.Api.Infrastructure.Identity;
 
@@ -18,7 +19,18 @@ public static class AdminEndpoints
         .AddScoped<SaveBrandHandler>()
         .AddScoped<DeleteBrandHandler>()
         .AddScoped<UploadImageHandler>()
-        .AddScoped<ListAdminImagesQuery>();
+        .AddScoped<ListAdminImagesQuery>()
+        .AddScoped<ListAdminOrdersQuery>()
+        .AddScoped<GetAdminOrderQuery>()
+        .AddScoped<ChangeOrderStatusHandler>()
+        .AddScoped<ExportOrdersHandler>()
+        .AddScoped<GetDashboardQuery>();
+
+    public static IServiceCollection AddAdminOptions(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<ExportOptions>(configuration.GetSection(ExportOptions.Section));
+        return services;
+    }
 
     public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
@@ -58,6 +70,20 @@ public static class AdminEndpoints
             query.ExecuteAsync(Math.Clamp(page ?? 1, 1, 10_000), ct));
         images.MapPost("", (HttpRequest request, UploadImageHandler handler, CancellationToken ct) => handler.ExecuteAsync(request, ct))
             .RequireRateLimiting(RateLimiting.UploadPolicy);
+
+        var orders = admin.MapGroup("/orders").WithTags("Admin: orders");
+        orders.MapGet("", ([AsParameters] AdminOrderListParameters parameters, ListAdminOrdersQuery query, CancellationToken ct) =>
+            query.ExecuteAsync(parameters, ct));
+        // A literal segment outranks the {number} parameter, so "export" never reads as an order number.
+        orders.MapGet("/export", (string? from, string? to, ExportOrdersHandler handler, CancellationToken ct) => handler.ExecuteAsync(from, to, ct))
+            .RequireRateLimiting(RateLimiting.ExportPolicy);
+        orders.MapGet("/{number}", async (string number, GetAdminOrderQuery query, CancellationToken ct) =>
+            await query.ExecuteAsync(number, ct) is { } order ? Results.Ok(order) : Results.NotFound());
+        orders.MapPost("/{number}/status", (string number, ChangeStatusRequest request, ClaimsPrincipal user, ChangeOrderStatusHandler handler, CancellationToken ct) =>
+            handler.ExecuteAsync(number, user.GetUserId(), request, ct));
+
+        admin.MapGet("/dashboard", (string? from, string? to, GetDashboardQuery query, CancellationToken ct) => query.ExecuteAsync(from, to, ct))
+            .WithTags("Admin: dashboard");
 
         return app;
     }
