@@ -8,10 +8,10 @@ import { IsActiveMatchOptions, RouterLink, RouterLinkActive, RouterOutlet } from
   template: `
     <div class="mx-auto max-w-7xl px-4 py-8 md:py-10">
       <p class="text-sm font-semibold uppercase tracking-widest text-accent">Admin</p>
-      <div class="mt-3 grid gap-6 lg:grid-cols-[11rem_1fr] lg:gap-8">
+      <div class="mt-3 grid grid-cols-1 gap-6 lg:grid-cols-[11rem_1fr] lg:gap-8">
         <nav aria-label="Admin">
           <ul
-            class="flex gap-1 overflow-x-auto border-b border-border lg:flex-col lg:border-b-0 lg:border-r lg:pr-4"
+            class="flex flex-wrap gap-x-1 border-b border-border lg:flex-col lg:flex-nowrap lg:border-b-0 lg:border-r lg:pr-4"
           >
             @for (link of links; track link.path) {
               <li>

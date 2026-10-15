@@ -158,7 +158,12 @@ const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR'
             <summary class="cursor-pointer text-sm font-semibold">
               Revenue per day as a table
             </summary>
-            <div class="mt-2 max-h-80 overflow-y-auto">
+            <div
+              class="mt-2 max-h-80 overflow-y-auto"
+              tabindex="0"
+              role="region"
+              aria-label="Revenue per day, scrollable table"
+            >
               <table class="w-full text-left text-sm">
                 <caption class="sr-only">
                   Revenue and orders per day
