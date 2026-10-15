@@ -17,6 +17,9 @@ public sealed class RateLimitOptions
 
     /// <summary>Checkout attempts per client IP per minute (each may hit the payment gateway).</summary>
     public int CheckoutPermitLimit { get; init; } = 10;
+
+    /// <summary>Admin image uploads per client IP per minute; each one decodes and re-encodes an image.</summary>
+    public int UploadPermitLimit { get; init; } = 20;
 }
 
 public static class RateLimiting
@@ -24,6 +27,7 @@ public static class RateLimiting
     public const string AuthPolicy = "auth";
     public const string QuotePolicy = "cart-quote";
     public const string CheckoutPolicy = "checkout";
+    public const string UploadPolicy = "upload";
 
     public static IServiceCollection AddAppRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
@@ -75,6 +79,15 @@ public static class RateLimiting
                 _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = options.CheckoutPermitLimit,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+
+            limiter.AddPolicy(UploadPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = options.UploadPermitLimit,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));

@@ -5,6 +5,7 @@ using FitnessMerchant.Api.Infrastructure.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.AspNetCore.Routing;
@@ -48,6 +49,22 @@ public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<stri
         var xsrf = new XsrfHeaderHandler(cookies);
         var http = CreateDefaultClient(BrowserClient.BaseAddress, new CookieContainerHandler(cookies), xsrf);
         return new BrowserClient(http, cookies, xsrf);
+    }
+
+    /// <summary>A browser signed in as a freshly registered user who holds the Admin role (roles are read at sign-in).</summary>
+    public async Task<BrowserClient> CreateAdminClientAsync()
+    {
+        var client = CreateBrowserClient();
+        var email = BrowserClient.NewEmail();
+        (await client.RegisterAsync(email)).EnsureSuccessStatusCode();
+        using (var scope = Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            await users.AddToRoleAsync((await users.FindByEmailAsync(email))!, Roles.Admin);
+        }
+        await client.SignOutAsync();
+        (await client.SignInAsync(email)).EnsureSuccessStatusCode();
+        return client;
     }
 
     private sealed class TestEndpoints : IEndpointMapper

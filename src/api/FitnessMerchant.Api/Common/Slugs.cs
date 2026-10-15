@@ -36,4 +36,30 @@ public static class Slugs
 
         return builder.ToString();
     }
+
+    /// <summary>
+    /// <paramref name="wanted"/> if it is free, otherwise the first free "-2", "-3"… variant, cut so the result
+    /// never exceeds <paramref name="maxLength"/>. <paramref name="taken"/> holds the slugs that could clash.
+    /// </summary>
+    public static string NextFree(string wanted, IReadOnlyCollection<string> taken, int maxLength)
+    {
+        var baseSlug = Trim(wanted, maxLength);
+        if (!taken.Contains(baseSlug))
+        {
+            return baseSlug;
+        }
+
+        for (var n = 2; ; n++)
+        {
+            var suffix = $"-{n}";
+            var candidate = Trim(wanted, maxLength - suffix.Length) + suffix;
+            if (!taken.Contains(candidate))
+            {
+                return candidate;
+            }
+        }
+    }
+
+    private static string Trim(string slug, int maxLength) =>
+        slug.Length <= maxLength ? slug : slug[..maxLength].TrimEnd('-');
 }

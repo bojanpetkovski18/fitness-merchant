@@ -381,3 +381,34 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **Account area:** one layout with a `nav` landmark labelled "Account" (tabs on phones, a side list from `md`) around child routes: Profile, Password, Orders and an order's page. `aria-current="page"` on the exact section; on an order's page the Orders link gets `aria-current="true"` (inside the section, not the page itself).
 - **Order items link by the current slug.** The detail and cancel responses look up the ordered products: still active gives the current slug (M09 lets admins rename slugs), archived gives `productAvailable: false` and the UI shows the name as text with "(no longer sold)". Names and prices always come from the order snapshot.
 - **Confirm dialog:** gained an optional `dismissLabel`. Cancelling an order now offers "Keep order" / "Cancel order" instead of "Cancel" / "Cancel order".
+
+## D026: Admin catalog and image upload (M09)
+- **Image library: SkiaSharp 4.153.1 (MIT)**, published 2026-09-30, checked on nuget.org on 2026-10-15.
+  - Alternatives: ImageSharp 4.1.3 is under the Six Labors Split License (Apache 2.0 only for open-source use, revenue under $1M, or as a transitive dependency; commercial otherwise). Magick.NET and NetVips bring large native stacks.
+  - SkiaSharp's native library ships per platform: Windows comes with the main package; `SkiaSharp.NativeAssets.Linux.NoDependencies` covers CI (Ubuntu) and the container (M13) without system packages.
+- **Upload pipeline** (`UploadedImageProcessor`):
+  1. Magic bytes decide the format (PNG, JPEG, WebP). The file name and the declared content type are ignored.
+  2. Dimensions come from the header before any pixels are decoded (≤ 4000×4000), so a small file that decodes into a huge bitmap is refused cheaply.
+  3. The decoder must agree with the sniffed format (a GIF or a broken file is refused).
+  4. The EXIF orientation is applied, then the pixels are re-encoded to WebP at quality 85. This drops EXIF, XMP and ICC metadata (camera, GPS).
+  5. The SHA-256 of the stored WebP is the dedupe key (the encoder is deterministic; a unit test checks it). A duplicate answers 200 with the existing image; a concurrent duplicate hits the unique index and gets the same row.
+  - Size: requests over 1 MB plus 16 kB of multipart framing answer 413 problem details; Kestrel's body limit is lowered for the endpoint too.
+  - The form is read from `HttpRequest`, not bound as `IFormFile`. Binding would require the framework antiforgery middleware, and opting out with `DisableAntiforgery()` would also switch off ours, which honours the same metadata.
+  - Rate limit `upload`: 20 per minute per IP (`RateLimiting__UploadPermitLimit`).
+- **Admin routes** sit in one `/api/admin` group with the Admin policy, so a route added later cannot miss it. An integration test walks the endpoint data source and asserts 401 for guests and 403 for customers on every admin route (mutation-checked).
+- **Products:**
+  - Updates carry `version` (xmin). The handler sets it as the original value, so a stale form updates nothing and gets 409 `concurrency` (mutation-checked).
+  - Delete hard-deletes a never-ordered product (its cart lines cascade) and archives an ordered one. If an order lands between the check and the delete, the restricting foreign key refuses and the handler archives instead.
+  - SKUs are normalized to upper case.
+  - Slugs: a given slug must already be slug-shaped and free. An empty slug is generated from the name with `-2`, `-3`… on collision, within the length limit. Clearing the slug keeps the stored one unless the name changed.
+  - The list allows only fixed sort keys, filters by category, brand and state, searches name or SKU with escaped `ILIKE`, and pages at most 48.
+- **Categories and brands:**
+  - Returned whole, not paged: 8 and 6 seeded, and an admin adds a handful at most.
+  - Last write wins; only products have a concurrency check.
+  - Delete is 409 `in-use` with `productCount` while any product (archived included) references them. The UI says so up front instead of asking for a confirmation it cannot honour.
+- **Admin UI:**
+  - The navigation is labelled "Admin": tabs up to tablets, a side list from `lg`, so the products table fits at 768 px.
+  - All table state lives in the URL. Column headers are buttons inside `th[aria-sort]`. Phones get stacked cards with a sort select.
+  - While a new query loads, the previous rows stay on screen (`linkedSignal`). Otherwise the table vanished and took keyboard focus with it: found in the browser pass, with a regression test written first.
+  - The product form maps server field errors to inputs. A 409 shows an alert whose "Reload latest version" button gets focus.
+  - The image picker uploads with progress and a preview, or chooses from a paged library dialog.
