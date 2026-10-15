@@ -118,8 +118,25 @@ export const routes: Routes = [
     canActivateChild: [adminGuard],
     loadComponent: () => import('./features/admin/admin-layout').then((m) => m.AdminLayout),
     children: [
-      // The dashboard takes this path in M10.
-      { path: '', pathMatch: 'full', redirectTo: 'products' },
+      {
+        path: '',
+        pathMatch: 'full',
+        title: 'Admin · Dashboard',
+        loadComponent: () =>
+          import('./features/admin/admin-dashboard-page').then((m) => m.AdminDashboardPage),
+      },
+      {
+        path: 'orders',
+        title: 'Admin · Orders',
+        loadComponent: () =>
+          import('./features/admin/admin-order-pages').then((m) => m.AdminOrdersPage),
+      },
+      {
+        path: 'orders/:number',
+        title: 'Admin · Order',
+        loadComponent: () =>
+          import('./features/admin/admin-order-pages').then((m) => m.AdminOrderPage),
+      },
       {
         path: 'products',
         title: 'Admin · Products',

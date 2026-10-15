@@ -42,6 +42,7 @@ builder.Services.AddCatalogFeature();
 builder.Services.AddCartFeature();
 builder.Services.AddOrdersFeature();
 builder.Services.AddAdminFeature();
+builder.Services.AddAdminOptions(builder.Configuration);
 builder.Services.AddPayments(builder.Configuration);
 builder.Services.AddScoped<GetImageQuery>();
 
