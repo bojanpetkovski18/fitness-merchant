@@ -17,7 +17,7 @@ import { BusyButton } from '../ui/busy-button';
   template: `
     @let p = product();
     <article
-      class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition hover:border-accent focus-within:border-accent"
+      class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition hover:border-accent focus-within:border-accent has-[a:focus-visible]:outline-3 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus"
     >
       <div class="relative">
         <img

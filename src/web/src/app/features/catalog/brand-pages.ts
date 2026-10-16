@@ -21,7 +21,7 @@ import { EmptyState, ErrorState, ProductGridSkeleton } from '../../shared/ui/sta
           <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (brand of brands.value(); track brand.slug) {
               <li
-                class="relative overflow-hidden rounded-xl border border-border bg-surface transition hover:border-accent focus-within:border-accent"
+                class="relative overflow-hidden rounded-xl border border-border bg-surface transition hover:border-accent focus-within:border-accent has-[a:focus-visible]:outline-3 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus"
               >
                 <img [src]="brand.logoUrl" alt="" width="600" height="200" class="w-full" />
                 <div class="p-4">
