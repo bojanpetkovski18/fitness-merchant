@@ -48,6 +48,15 @@
       </h2>
       @if (section.resource.error()) {
         <app-error-state (retry)="section.resource.reload()" />
+      } @else if (section.resource.hasValue() && section.resource.value().items.length === 0) {
+        <p class="text-muted">
+          Nothing here right now.
+          <a
+            routerLink="/supplements"
+            class="font-semibold text-accent underline underline-offset-4"
+            >Browse supplements</a
+          >
+        </p>
       } @else if (section.resource.hasValue()) {
         <app-product-grid
           [products]="section.resource.value().items"
@@ -77,6 +86,8 @@
     </div>
     @if (brands.error()) {
       <app-error-state (retry)="brands.reload()" />
+    } @else if (brands.hasValue() && brands.value().length === 0) {
+      <p class="text-muted">No brands yet.</p>
     } @else if (brands.hasValue()) {
       <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         @for (brand of brands.value(); track brand.slug) {

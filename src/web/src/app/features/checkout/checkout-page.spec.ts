@@ -202,3 +202,46 @@ describe('CheckoutPage', () => {
     );
   });
 });
+
+describe('CheckoutPage before the cart has loaded', () => {
+  it('waits for the cart, and explains a failed load with a retry instead of an empty form', async () => {
+    // M12 states audit: the steps used to render over a cart that was still loading or had failed.
+    localStorage.clear();
+    guestCartStorage.write([{ productId, quantity: 1 }]);
+    TestBed.configureTestingModule({
+      imports: [CheckoutPage],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: '**', component: Blank }]),
+      ],
+    });
+    const backend = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(CheckoutPage);
+    const element = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(element);
+    TestBed.tick();
+    const quote = backend.expectOne('/api/cart/quote');
+
+    expect(element.querySelector('[role="status"]')?.textContent).toContain('Loading your cart');
+    expect(element.querySelector('#step-1-heading')).toBeNull();
+
+    quote.flush(null, { status: 500, statusText: 'Server Error' });
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain(
+      "Couldn't load your cart",
+    );
+    expect(element.querySelector('#step-1-heading')).toBeNull();
+
+    [...element.querySelectorAll('button')]
+      .find((b) => b.textContent?.includes('Try again'))!
+      .click();
+    TestBed.tick();
+    backend.expectOne('/api/cart/quote').flush(cart);
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+    expect(element.querySelector('#step-1-heading')).not.toBeNull();
+    element.remove();
+  });
+});

@@ -17,7 +17,7 @@ import { CartStore } from '../../core/cart/cart.store';
 import { ApiProblem, toApiProblem } from '../../core/http/api-problem';
 import { Order, shippingCountries } from '../../core/orders/order.models';
 import { fieldError } from '../../shared/forms/field-error';
-import { EmptyState } from '../../shared/ui/states';
+import { EmptyState, ErrorState } from '../../shared/ui/states';
 import { BusyButton } from '../../shared/ui/busy-button';
 
 type Step = 1 | 2 | 3;
@@ -37,7 +37,7 @@ type PaymentField = 'cardNumber' | 'expiry' | 'cvc' | 'nameOnCard';
  */
 @Component({
   selector: 'app-checkout-page',
-  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, EmptyState, BusyButton],
+  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, EmptyState, ErrorState, BusyButton],
   templateUrl: './checkout-page.html',
 })
 export class CheckoutPage {

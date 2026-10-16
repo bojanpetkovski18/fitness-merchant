@@ -2,7 +2,13 @@
   <h1 class="fm-display text-4xl md:text-5xl">Checkout</h1>
 
   @let c = cart.cart();
-  @if (cart.status() === 'ready' && c.lines.length === 0 && !submitting()) {
+  @if (cart.status() === 'loading' && c.lines.length === 0 && !submitting()) {
+    <p role="status" class="mt-8 text-muted">Loading your cart…</p>
+  } @else if (cart.status() === 'error' && c.lines.length === 0 && !submitting()) {
+    <div class="mt-8">
+      <app-error-state title="Couldn't load your cart" (retry)="cart.load()" />
+    </div>
+  } @else if (cart.status() === 'ready' && c.lines.length === 0 && !submitting()) {
     <div class="mt-8">
       <app-empty-state title="Your cart is empty" message="Add something before checking out.">
         <a routerLink="/supplements" class="rounded-md bg-accent px-4 py-2 font-bold text-on-accent"
