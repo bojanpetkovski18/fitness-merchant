@@ -1,6 +1,9 @@
 using FitnessMerchant.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace FitnessMerchant.Api.Infrastructure.Identity;
 
@@ -17,6 +20,12 @@ public static class AuthSetup
         // image locally over plain http (docker compose on localhost, D032); never set it on a public deployment.
         var requireHttps = builder.Configuration.GetValue("Auth:RequireHttps", !development);
         builder.Services.AddSingleton(new CookieHttpsPolicy(requireHttps));
+
+        // D032: the keys behind session and antiforgery cookies live in PostgreSQL, so sessions survive a container
+        // restart and work on every instance. A fixed application name keeps them valid whatever the install path.
+        builder.Services.AddDataProtection()
+            .SetApplicationName("FitnessMerchant")
+            .Services.AddSingleton<IConfigureOptions<KeyManagementOptions>, DatabaseKeyRepositorySetup>();
 
         builder.Services
             .AddIdentityCore<AppUser>(options =>
