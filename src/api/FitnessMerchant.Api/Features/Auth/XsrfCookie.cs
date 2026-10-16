@@ -1,3 +1,4 @@
+using FitnessMerchant.Api.Infrastructure.Identity;
 using Microsoft.AspNetCore.Antiforgery;
 
 namespace FitnessMerchant.Api.Features.Auth;
@@ -7,7 +8,7 @@ namespace FitnessMerchant.Api.Features.Auth;
 /// Antiforgery tokens are bound to the current user, so this runs again whenever the user changes
 /// (session load, sign-in, register, sign-out) with <see cref="HttpContext.User"/> already updated.
 /// </summary>
-public sealed class XsrfCookie(IAntiforgery antiforgery, IHostEnvironment environment)
+public sealed class XsrfCookie(IAntiforgery antiforgery, CookieHttpsPolicy https)
 {
     public const string Name = "XSRF-TOKEN";
 
@@ -18,7 +19,7 @@ public sealed class XsrfCookie(IAntiforgery antiforgery, IHostEnvironment enviro
         {
             HttpOnly = false, // Angular must read it; it is useless to an attacker without the HttpOnly antiforgery cookie
             SameSite = SameSiteMode.Strict,
-            Secure = !environment.IsDevelopment() || context.Request.IsHttps,
+            Secure = https.RequireHttps || context.Request.IsHttps,
             Path = "/",
         });
     }

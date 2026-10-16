@@ -16,6 +16,11 @@ using FitnessMerchant.Api.Infrastructure.Identity;
 using FitnessMerchant.Api.Infrastructure.Payments;
 using Scalar.AspNetCore;
 
+if (args.Contains(HealthProbe.Argument))
+{
+    return await HealthProbe.RunAsync();
+}
+
 var builder = WebApplication.CreateBuilder(args);
 builder.AddDevelopmentDotEnv();
 
@@ -96,3 +101,4 @@ foreach (var mapper in app.Services.GetServices<IEndpointMapper>())
 }
 
 await app.RunAsync();
+return 0;

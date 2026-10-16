@@ -13,6 +13,10 @@ public static class AuthSetup
     public static WebApplicationBuilder AddAppAuth(this WebApplicationBuilder builder)
     {
         var development = builder.Environment.IsDevelopment();
+        // Cookies are HTTPS-only outside Development. "Auth:RequireHttps=false" is only for running the production
+        // image locally over plain http (docker compose on localhost, D032); never set it on a public deployment.
+        var requireHttps = builder.Configuration.GetValue("Auth:RequireHttps", !development);
+        builder.Services.AddSingleton(new CookieHttpsPolicy(requireHttps));
 
         builder.Services
             .AddIdentityCore<AppUser>(options =>
@@ -37,8 +41,8 @@ public static class AuthSetup
             options.Cookie.Name = SessionCookieName;
             options.Cookie.HttpOnly = true;
             options.Cookie.SameSite = SameSiteMode.Strict;
-            // Development runs over plain http; everywhere else the cookie is HTTPS-only.
-            options.Cookie.SecurePolicy = development ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+            // HTTPS-only unless Auth:RequireHttps is off (Development, local compose).
+            options.Cookie.SecurePolicy = requireHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
             options.ExpireTimeSpan = TimeSpan.FromDays(7);
             options.SlidingExpiration = true;
 
@@ -67,7 +71,7 @@ public static class AuthSetup
             options.Cookie.Name = AntiforgeryCookieName;
             options.Cookie.HttpOnly = true;
             options.Cookie.SameSite = SameSiteMode.Strict;
-            options.Cookie.SecurePolicy = development ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+            options.Cookie.SecurePolicy = requireHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
         });
 
         return builder;
@@ -87,3 +91,6 @@ public static class AuthSetup
         return Task.CompletedTask;
     }
 }
+
+/// <summary>Whether auth cookies are HTTPS-only (set once in <see cref="AuthSetup"/>).</summary>
+public sealed record CookieHttpsPolicy(bool RequireHttps);
