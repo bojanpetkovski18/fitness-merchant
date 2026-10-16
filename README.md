@@ -27,6 +27,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
+On Windows, run `git config --global core.longpaths true` first, or clone into a short path such as `C:\src`: some migration file paths are long, and a deep folder pushes them past Windows' 260-character limit.
+
 The first build takes a few minutes. When the log says the app is listening, open <http://localhost:8080>. The catalog is seeded on the first start.
 
 - **Demo accounts:** the `DEMO_ADMIN_*` and `DEMO_CUSTOMER_*` values in `.env` (admin: `admin@fitness-merchant.example` / `Change-Me-Admin-1`). Change them before you show the app to anyone.

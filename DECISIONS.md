@@ -490,3 +490,34 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **K8, brand facets:** `/api/catalog/brands?department=` returns brands with active products in that department, counted there.
 - **Static pages:** About (the portfolio project, invented data, AI assistance, repository link) and Contact/FAQ (CDK accordion, no personal contact data). The placeholder page they replaced was deleted as dead code, as the M12 brief asks.
 - **K2:** the owner approved the `lmdb` and `msgpackr-extract` install scripts, pinned to exact versions in `package.json` `allowScripts`.
+
+## D032: Production image, Compose stack and the E2E journey (M13)
+- **One image, three stages,** each base pinned by tag and digest (recorded 2026-10-16):
+  - `node:24.20.0-bookworm-slim` builds the SPA with `npm run build`, so the precompressed copies ship (D029);
+  - `dotnet/sdk:10.0.401-noble` publishes the API for linux-x64, framework-dependent;
+  - `dotnet/aspnet:10.0.12-noble-chiseled-extra` runs it. Chiseled means no shell and no package manager; "extra" adds ICU and time-zone data.
+  - The image runs as the image's non-root `app` user (UID 1654). Size 272 MB.
+  - No secrets in layers: `.dockerignore` excludes `.env`, and settings arrive as environment variables at run time.
+- **Health check without a shell:** the image has no curl, so `dotnet FitnessMerchant.Api.dll --health-check` probes `/health/live` on the local port and exits 0 or 1 (`Features/Health/HealthProbe.cs`). It checks liveness only; `/health` still includes the database.
+- **`Auth:RequireHttps`** (default: on outside Development): session and antiforgery cookies are HTTPS-only. Only the local Compose file turns it off, so the image works on `http://localhost`. A deployment keeps it on (K13 still applies there). Both ways are tested.
+- **Data-protection keys in PostgreSQL** (`data_protection_keys`):
+  - Inside a container the default key ring lives in the container's file system, so a restart (or a second instance) would invalidate every session and antiforgery token. A test shows a session surviving a restart and moving to another instance; checked by hand against a restarted container.
+  - **Own `IXmlRepository`** (about 30 lines) instead of `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`. That package's 10.0.12 release pulls NuGet copies of `System.Security.Cryptography.Xml`/`Pkcs` with open advisories (GHSA-7hqp-7c5m-4vq6 and others, published 2026-10-13). The fix, 10.0.13, is too new to pin under the two-week rule. The interface already ships with ASP.NET Core.
+  - **Keys are not encrypted at rest** (the framework logs "No XML encryptor configured" once per new key). Anyone who can read the database can read the keys, but such a person can already read every account. Encrypting them needs a certificate kept as a secret; decide in M14 with the host.
+  - A fixed application name (`FitnessMerchant`) keeps the keys valid whatever the install path. The demo reset does not touch the table.
+- **No `Server: Kestrel` header.** It only advertises the stack.
+- **Compose:**
+  - the project name is fixed; the database port is not published;
+  - the app is bound to `127.0.0.1` (`APP_PORT`, default 8080);
+  - migrations and seed run on start; demo users come from `.env`;
+  - `docker compose up --build` is the one command.
+- **E2E:**
+  - one Playwright journey (SPEC criterion 9), with axe on each visited page;
+  - `@playwright/test` 1.63.0 and `@axe-core/playwright` 4.13.0, the versions already used for the M12 audit;
+  - Chromium only, one worker, no retries: a flaky journey should fail.
+  - It reads the repo-root `.env` with Node's `process.loadEnvFile`, so it signs in as the same demo admin the stack seeds. Variables already set win.
+  - It waits for the account menu, not the cart badge, to know a sign-in finished. The guest badge proves nothing, and navigating too early aborted the registration request.
+- **CI job `e2e`:**
+  - builds and starts the stack from `.env.example`, waits for health and runs the journey;
+  - on failure it prints the app log and uploads the report and trace (`actions/upload-artifact` v7.0.1 pinned by SHA; v7.0.2 was 9 days old).
+- **Windows clones:** a deep clone path pushes the longest migration paths past 260 characters (found in the fresh-clone test), so the README tells Windows users to set `core.longpaths` or clone into a short path.

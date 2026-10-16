@@ -74,6 +74,15 @@ All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.
 **Performance** (verified 2026-10-16, M12)
 - `k6 run tools/load/catalog-list.js` (`-e BASE_URL=… -e VUS=… -e DURATION=…`): load test of the catalog list API with a p95 < 200 ms threshold. k6 is not a project dependency: download a pinned, checksum-verified release (v2.3.0 was used). Measure against a Release build (`dotnet run -c Release --no-launch-profile`) so console logging does not skew the numbers.
 
+**Full stack (production image)**, verified 2026-10-16 (M13)
+- `docker compose up --build`: builds the image and starts PostgreSQL plus the app on `http://localhost:8080` (`APP_PORT` in `.env`). Migrations, seed and demo users run on start. Add `-d --wait` to return once both are healthy.
+- `docker compose logs app` / `docker compose down`: logs (JSON) / stop, keeping the `pgdata` volume. `docker compose down -v` also deletes the data (ask first).
+- `docker image inspect fitness-merchant:local --format "{{.Size}}"`: image size. The chiseled image has no shell, so check the user with `docker top fitness-merchant-app-1` (UID 1654), not `docker exec … id`.
+
+**E2E** (`tests/e2e`, with the stack running)
+- `npm ci` then `npx playwright install chromium`: one-time setup.
+- `npx playwright test`: the journey against `E2E_BASE_URL` (default `http://localhost:8080`), about 7–12 s. It reads the repo-root `.env` for the demo admin. On failure, `npx playwright show-trace test-results/*/trace.zip`.
+
 **CI**
 - `.github/workflows/ci.yml` runs the same commands, plus a gitleaks history scan, actionlint and editorconfig-checker.
 
