@@ -9,7 +9,8 @@
   <app-demo-banner />
   <app-site-header />
 
-  <main #main id="main" tabindex="-1" class="flex-1 outline-none">
+  <!-- At least a screen tall, so the footer starts below the fold and cannot jump when content loads (M12, CLS). -->
+  <main #main id="main" tabindex="-1" class="min-h-dvh flex-1 outline-none">
     <router-outlet />
   </main>
 

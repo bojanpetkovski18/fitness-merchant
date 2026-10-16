@@ -37,6 +37,8 @@ builder.Services.AddValidation();
 builder.Services.AddOpenApi();
 builder.Services.AddAppForwardedHeaders(builder.Configuration);
 builder.Services.AddAppSpa();
+// SPEC section 9: HSTS in production. Sent only on HTTPS responses, and never for localhost.
+builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.AddAppDatabase();
 builder.AddAppAuth();
@@ -56,6 +58,10 @@ var app = builder.Build();
 await app.InitializeDatabaseAsync();
 
 app.UseAppForwardedHeaders();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseMiddleware<SecurityHeadersMiddleware>();

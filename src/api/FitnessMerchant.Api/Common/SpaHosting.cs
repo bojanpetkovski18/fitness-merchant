@@ -1,4 +1,7 @@
+using System.IO.Compression;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Net.Http.Headers;
 
@@ -23,8 +26,23 @@ public sealed class SpaOptions
 /// </summary>
 public static partial class SpaHosting
 {
-    public static IServiceCollection AddAppSpa(this IServiceCollection services) =>
+    public static IServiceCollection AddAppSpa(this IServiceCollection services)
+    {
         services.Configure<RouteOptions>(options => options.SetParameterPolicy<SpaRouteConstraint>(SpaRouteConstraint.Name));
+        services.AddResponseCompression(options =>
+        {
+            // Only the SPA's own files go through this (see UseAppSpaFiles), never API responses: compressing
+            // responses that mix user data and secrets over HTTPS invites BREACH-style attacks.
+            options.EnableForHttps = true;
+            options.Providers.Add<BrotliCompressionProvider>();
+            options.Providers.Add<GzipCompressionProvider>();
+            options.MimeTypes = ["text/html", "text/css", "text/javascript", "application/javascript", "image/svg+xml"];
+        });
+        // On the fly only for files without a precompressed copy (index.html, a few SVGs): small, so Optimal is cheap.
+        services.Configure<BrotliCompressionProviderOptions>(options => options.Level = CompressionLevel.Optimal);
+        services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Optimal);
+        return services;
+    }
 
     public static WebApplication UseAppSpaFiles(this WebApplication app)
     {
@@ -33,8 +51,28 @@ public static partial class SpaHosting
             return app;
         }
 
+        // M12 Lighthouse: the bundles went out uncompressed. The build writes .br/.gz copies at maximum
+        // compression (scripts/precompress.mjs); serve those when the browser takes them. Anything without a
+        // copy (index.html from the fallback) is compressed on the fly. Never under /api or /health.
+        app.UseWhen(
+            context => !context.Request.Path.StartsWithSegments("/api") && !context.Request.Path.StartsWithSegments("/health"),
+            branch =>
+            {
+                branch.Use((context, next) =>
+                {
+                    ServePrecompressed(context, files);
+                    return next(context);
+                });
+                branch.UseResponseCompression();
+            });
+
         // Before authentication: static files are public and are not endpoints, so the fallback policy does not apply.
-        app.UseStaticFiles(new StaticFileOptions { FileProvider = files, OnPrepareResponse = context => SetCaching(context.Context.Response, context.File.Name) });
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = files,
+            ContentTypeProvider = new PrecompressedContentTypes(),
+            OnPrepareResponse = context => SetCaching(context.Context.Response, context.File.Name),
+        });
         return app;
     }
 
@@ -51,6 +89,30 @@ public static partial class SpaHosting
             OnPrepareResponse = context => SetCaching(context.Context.Response, context.File.Name),
         }).AllowAnonymous();
         return app;
+    }
+
+    /// <summary>Points the request at "x.js.br" (or ".gz") when that copy exists and the client accepts it.</summary>
+    private static void ServePrecompressed(HttpContext context, PhysicalFileProvider files)
+    {
+        var path = context.Request.Path.Value;
+        if (!(HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)) ||
+            string.IsNullOrEmpty(path) || !files.GetFileInfo(path).Exists)
+        {
+            return;
+        }
+
+        var accepted = context.Request.GetTypedHeaders().AcceptEncoding;
+        foreach (var (encoding, suffix) in new[] { ("br", ".br"), ("gzip", ".gz") })
+        {
+            if (accepted.Any(a => a.Value.Equals(encoding, StringComparison.OrdinalIgnoreCase) && (a.Quality ?? 1) > 0) &&
+                files.GetFileInfo(path + suffix).Exists)
+            {
+                context.Request.Path = path + suffix;
+                context.Response.Headers.ContentEncoding = encoding;
+                context.Response.Headers.Vary = HeaderNames.AcceptEncoding;
+                return;
+            }
+        }
     }
 
     internal static void SetCaching(HttpResponse response, string fileName)
@@ -72,7 +134,7 @@ public static partial class SpaHosting
     }
 
     /// <summary>Angular's output hashing: "main-I64NK2YK.js", "chunk-B29o-tf5.js", "styles-5INURTSO.css".</summary>
-    [GeneratedRegex(@"-[A-Za-z0-9_-]{8}\.(js|css)$")]
+    [GeneratedRegex(@"-[A-Za-z0-9_-]{8}\.(js|css)(\.br|\.gz)?$")]
     private static partial Regex HashedName();
 }
 
@@ -90,4 +152,15 @@ public sealed class SpaRouteConstraint : IRouteConstraint
     private static bool IsUnder(string path, string segment) =>
         path.Equals(segment, StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith(segment + "/", StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>Content types for precompressed copies: "main.js.br" is still JavaScript.</summary>
+internal sealed class PrecompressedContentTypes : IContentTypeProvider
+{
+    private readonly FileExtensionContentTypeProvider _types = new();
+
+    public bool TryGetContentType(string subpath, out string contentType) =>
+        _types.TryGetContentType(
+            subpath.EndsWith(".br", StringComparison.Ordinal) || subpath.EndsWith(".gz", StringComparison.Ordinal) ? subpath[..^3] : subpath,
+            out contentType!);
 }

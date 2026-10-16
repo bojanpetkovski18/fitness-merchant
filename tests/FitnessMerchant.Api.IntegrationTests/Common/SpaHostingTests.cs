@@ -33,6 +33,67 @@ public sealed class SpaHostingTests(PostgresFixture postgres) : IDisposable
         Assert.Equal("public, max-age=3600", icon.Headers.CacheControl?.ToString());
     }
 
+    [Fact]
+    public async Task Spa_files_are_compressed_but_api_responses_never_are()
+    {
+        // M12 Lighthouse: the bundles went out uncompressed. API JSON stays uncompressed on purpose (BREACH).
+        await using var factory = await StartAsync();
+        using var client = factory.CreateClient();
+
+        async Task<string?> EncodingOf(string path)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.AcceptEncoding.ParseAdd("br, gzip");
+            var response = await client.SendAsync(request, Ct);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return response.Content.Headers.ContentEncoding.SingleOrDefault();
+        }
+
+        Assert.Equal("br", await EncodingOf("/main-I64NK2YK.js"));
+        Assert.Equal("br", await EncodingOf("/products/whey-isolate-vanilla-2-kg")); // index.html from the fallback
+        Assert.Null(await EncodingOf("/api/catalog/departments"));
+        Assert.Null(await EncodingOf("/api/meta"));
+    }
+
+    [Fact]
+    public async Task Precompressed_copies_from_the_build_are_served_as_is()
+    {
+        await using var factory = await StartAsync();
+        byte[] precompressed = [0x1b, 0x13, 0x00, 0xf8, 0x25, 0x82]; // stands in for "main-I64NK2YK.js.br"
+        await File.WriteAllBytesAsync(Path.Combine(_root, "main-I64NK2YK.js.br"), precompressed, Ct);
+        using var client = factory.CreateClient();
+
+        using var brotli = new HttpRequestMessage(HttpMethod.Get, "/main-I64NK2YK.js");
+        brotli.Headers.AcceptEncoding.ParseAdd("gzip, br");
+        var compressed = await client.SendAsync(brotli, Ct);
+        var plain = await client.GetAsync("/main-I64NK2YK.js", Ct);
+
+        Assert.Equal(precompressed, await compressed.Content.ReadAsByteArrayAsync(Ct));
+        Assert.Equal("br", compressed.Content.Headers.ContentEncoding.Single());
+        Assert.Equal("text/javascript", compressed.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("Accept-Encoding", compressed.Headers.Vary);
+        Assert.Equal("public, max-age=31536000, immutable", compressed.Headers.CacheControl?.ToString());
+        Assert.Equal("console.log('main');", await plain.Content.ReadAsStringAsync(Ct));
+        Assert.Empty(plain.Content.Headers.ContentEncoding);
+    }
+
+    [Theory]
+    [InlineData("fitness-merchant.example", true)]
+    [InlineData("localhost", false)]
+    public async Task Https_responses_carry_hsts_outside_development_except_for_localhost(string host, bool expected)
+    {
+        await using var factory = await StartAsync();
+        using var client = factory.CreateClient(new() { BaseAddress = new Uri($"https://{host}") });
+
+        var response = await client.GetAsync("/", Ct);
+
+        Assert.Equal(expected, response.Headers.TryGetValues("Strict-Transport-Security", out var values));
+        if (expected)
+        {
+            Assert.Equal("max-age=31536000", values!.Single());
+        }
+    }
+
     [Theory]
     [InlineData("/api/no-such-endpoint", HttpStatusCode.Unauthorized)]
     [InlineData("/api", HttpStatusCode.Unauthorized)]
