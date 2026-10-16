@@ -23,6 +23,7 @@ import { ApiProblem, toApiProblem } from '../../core/http/api-problem';
 import { ToastService } from '../../core/ui/toast.service';
 import { fieldError } from '../../shared/forms/field-error';
 import { RatingStars } from '../../shared/catalog/rating-stars';
+import { BusyButton } from '../../shared/ui/busy-button';
 import { ErrorState } from '../../shared/ui/states';
 
 const stars = [5, 4, 3, 2, 1] as const;
@@ -34,7 +35,15 @@ const stars = [5, 4, 3, 2, 1] as const;
  */
 @Component({
   selector: 'app-product-reviews',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe, DecimalPipe, RatingStars, ErrorState],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    DatePipe,
+    DecimalPipe,
+    RatingStars,
+    ErrorState,
+    BusyButton,
+  ],
   template: `
     <section id="reviews" aria-labelledby="reviews-heading" class="mt-14 scroll-mt-24">
       <h2 id="reviews-heading" class="fm-display mb-4 text-2xl">Reviews</h2>
@@ -201,8 +210,8 @@ const stars = [5, 4, 3, 2, 1] as const;
 
                 <button
                   type="submit"
-                  [disabled]="pending()"
-                  class="mt-4 rounded-md bg-accent px-5 py-2.5 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60"
+                  [appBusy]="pending()"
+                  class="mt-4 rounded-md bg-accent px-5 py-2.5 font-bold text-on-accent hover:bg-accent-strong aria-disabled:opacity-60"
                 >
                   {{ pending() ? 'Posting…' : 'Post review' }}
                 </button>
@@ -246,8 +255,8 @@ const stars = [5, 4, 3, 2, 1] as const;
                 <div aria-live="polite" class="mt-5">
                   <button
                     type="button"
-                    class="rounded-md border border-border px-4 py-2 font-bold hover:bg-surface-2 disabled:opacity-60"
-                    [disabled]="loadingMore()"
+                    class="rounded-md border border-border px-4 py-2 font-bold hover:bg-surface-2 aria-disabled:opacity-60"
+                    [appBusy]="loadingMore()"
                     (click)="loadMore()"
                   >
                     {{ loadingMore() ? 'Loading…' : 'Show more reviews' }}

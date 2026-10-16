@@ -1,5 +1,6 @@
 import { Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { BusyButton } from '../../shared/ui/busy-button';
 import { SessionStore } from '../../core/auth/session.store';
 import { ApiProblem, toApiProblem } from '../../core/http/api-problem';
 import { fieldError } from '../../shared/forms/field-error';
@@ -8,7 +9,7 @@ type Field = 'currentPassword' | 'newPassword';
 
 @Component({
   selector: 'app-password-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, BusyButton],
   template: `
     <h1 class="fm-display text-3xl md:text-4xl">Password</h1>
     <p class="mt-2 text-muted">
@@ -88,8 +89,8 @@ type Field = 'currentPassword' | 'newPassword';
 
       <button
         type="submit"
-        [disabled]="pending()"
-        class="rounded-md bg-accent px-5 py-3 font-bold text-on-accent hover:bg-accent-strong disabled:opacity-60"
+        [appBusy]="pending()"
+        class="rounded-md bg-accent px-5 py-3 font-bold text-on-accent hover:bg-accent-strong aria-disabled:opacity-60"
       >
         {{ pending() ? 'Changing password…' : 'Change password' }}
       </button>

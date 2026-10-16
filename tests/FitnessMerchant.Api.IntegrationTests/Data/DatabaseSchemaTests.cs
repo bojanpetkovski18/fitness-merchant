@@ -23,6 +23,23 @@ public class DatabaseSchemaTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task The_first_startup_on_an_empty_database_logs_no_errors()
+    {
+        // K3: EF used to log a failed query for the migrations history table before creating it.
+        await using var factory = new ApiFactory(await postgres.CreateEmptyDatabaseAsync(), new Dictionary<string, string?>
+        {
+            ["Database:MigrateOnStartup"] = "true",
+        });
+
+        using var client = factory.CreateClient();
+        Assert.Equal(System.Net.HttpStatusCode.OK, (await client.GetAsync("/health", Ct)).StatusCode);
+
+        Assert.Contains(factory.Logs.Lines, l => l.Contains("Applying migration", StringComparison.Ordinal));
+        var errors = factory.Logs.Lines.Where(l => l.StartsWith("Error ", StringComparison.Ordinal) || l.StartsWith("Critical ", StringComparison.Ordinal)).ToList();
+        Assert.True(errors.Count == 0, string.Join(Environment.NewLine, errors.Select(e => e[..Math.Min(e.Length, 400)])));
+    }
+
+    [Fact]
     public async Task Model_matches_the_migrations()
     {
         await using var db = PostgresFixture.CreateDbContext(await postgres.CreateDatabaseAsync());

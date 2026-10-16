@@ -36,7 +36,7 @@
     --fm-on-accent: #ffffff;
     --fm-focus: #b45309;
     --fm-danger: #b91c1c;
-    --fm-success: #15803d;
+    --fm-success: #166534; /* darker than green-700: 4.5:1 also on its own 10% tint (M12 audit) */
   }
 }
 
@@ -53,7 +53,7 @@
   --fm-on-accent: #ffffff;
   --fm-focus: #b45309;
   --fm-danger: #b91c1c;
-  --fm-success: #15803d;
+  --fm-success: #166534;
 }
 
 @theme inline {
@@ -87,6 +87,12 @@
   }
 
   :focus-visible {
+    outline: 3px solid var(--fm-focus);
+    outline-offset: 2px;
+  }
+
+  /* Date inputs move focus into their date segments, where :focus-visible never reaches the box. */
+  input[type='date']:focus-within {
     outline: 3px solid var(--fm-focus);
     outline-offset: 2px;
   }

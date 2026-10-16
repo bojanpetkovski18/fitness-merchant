@@ -56,6 +56,24 @@ public class CatalogTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/catalog/brands/no-such-brand", Ct)).StatusCode);
     }
 
+    [Theory]
+    [InlineData("gear", Department.Gear)]
+    [InlineData("supplements", Department.Supplements)]
+    public async Task Brands_can_be_limited_to_a_department_with_counts_inside_it(string slug, Department department)
+    {
+        // K8: the department pages offered every brand, so picking a gear brand on Supplements found nothing.
+        await using var api = await NewApiAsync();
+        var (client, oracle) = (api.Client, api.Oracle);
+
+        var brands = await client.GetFromJsonAsync<List<BrandResponse>>($"/api/catalog/brands?department={slug}", Json, Ct);
+
+        var expected = oracle.Where(p => p.IsActive && p.Department == department)
+            .GroupBy(p => p.BrandSlug).ToDictionary(g => g.Key, g => g.Count());
+        Assert.Equal(expected.OrderBy(e => e.Key, StringComparer.Ordinal), brands!.Select(b => KeyValuePair.Create(b.Slug, b.ProductCount)).OrderBy(e => e.Key, StringComparer.Ordinal));
+        Assert.True(brands!.Count < 6, "each department has only some of the brands");
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/catalog/brands?department=shoes", Ct)).StatusCode);
+    }
+
     public static TheoryData<string> FilterQueries => new()
     {
         "",

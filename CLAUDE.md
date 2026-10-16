@@ -56,19 +56,23 @@ All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.
 
 **API** (`src/api/FitnessMerchant.Api`)
 - `dotnet build FitnessMerchant.slnx`: builds everything; warnings are errors.
-- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`). Integration tests start their own PostgreSQL container through Testcontainers, so Docker must be running; the dev database is not used. About 30–50 s on M1 after M11 (356 tests); the time varies with the local Docker daemon.
+- `dotnet test --solution FitnessMerchant.slnx`: unit and integration tests (Microsoft.Testing.Platform, opted in via `global.json`). Integration tests start their own PostgreSQL container through Testcontainers, so Docker must be running; the dev database is not used. About 40 s on M1 after M12 (375 tests); the time varies with the local Docker daemon.
 - `dotnet test --project tests/FitnessMerchant.Api.IntegrationTests --output Detailed`: one project with per-test timings.
 - `dotnet test --project tests/FitnessMerchant.Api.IntegrationTests -- --filter-class "*AccountTests"`: one test class (`--filter-method "*name*"` for one test; combining both filters matches nothing).
 - `dotnet run --project src/api/FitnessMerchant.Api`: runs the API on `http://localhost:5080`. In Development it reads the repo-root `.env`, applies migrations (`Database__MigrateOnStartup`) and seeds an empty catalog (`Seed__Enabled`). API docs are at `/scalar` and `/openapi/v1.json`. Health: `/health` (includes the DB) and `/health/live`.
 - `dotnet ef migrations add <Name> --project src/api/FitnessMerchant.Api --output-dir Infrastructure/Data/Migrations`: adds a migration. Review it with `dotnet ef migrations script --project src/api/FitnessMerchant.Api` (build first; `--no-build` uses the last build). A forgotten migration fails the test suite (`Model_matches_the_migrations`; EF also refuses `MigrateAsync`).
-- Re-seed the dev catalog: stop the API, run `docker compose -f docker-compose.dev.yml exec -T db psql -U fitness_merchant -d fitness_merchant -c "truncate products, brands, categories, images;"`, then start the API again.
+- Reset the dev data to the seed (verified 2026-10-16, M12): start the API with `DEMO_MODE=true` (environment variable or `.env`), sign in as the demo admin and use Admin → Dashboard → "Reset demo data now" (or `POST /api/admin/demo/reset`). This removes everything created since seeding, keeps the demo accounts and re-runs the seeders. It replaces the M02 truncate command, which predates orders (which reference products) and was not re-verified.
+- `Spa__RootPath="$(pwd)/src/web/dist/web/browser" dotnet run --project src/api/FitnessMerchant.Api`: the API also serves the production SPA build (run `npm run build` first) on `http://localhost:5080`, with the strict CSP. Use it to test production-only behaviour. Verified 2026-10-16 (M12).
 
 **Web** (`src/web`)
 - `npm start`: dev server on `http://localhost:4200`, proxying `/api` and `/health` to the API.
 - `npm run lint`: ESLint, including Angular template accessibility rules.
 - `npm run format:check` / `npm run format`: Prettier check / fix.
 - `npm run test:ci`: Vitest component tests, single run. `npm test` runs in watch mode. `npx ng test --watch=false --include src/app/shared/ui/confirm-dialog.spec.ts` runs one spec.
-- `npm run build`: production build to `src/web/dist/web`.
+- `npm run build`: production build to `src/web/dist/web`, then `scripts/precompress.mjs` writes `.br`/`.gz` copies that the API serves (M12, verified 2026-10-16).
+
+**Performance** (verified 2026-10-16, M12)
+- `k6 run tools/load/catalog-list.js` (`-e BASE_URL=… -e VUS=… -e DURATION=…`): load test of the catalog list API with a p95 < 200 ms threshold. k6 is not a project dependency: download a pinned, checksum-verified release (v2.3.0 was used). Measure against a Release build (`dotnet run -c Release --no-launch-profile`) so console logging does not skew the numbers.
 
 **CI**
 - `.github/workflows/ci.yml` runs the same commands, plus a gitleaks history scan, actionlint and editorconfig-checker.

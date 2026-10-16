@@ -453,3 +453,40 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - The rating input is five radios in natural order (1 to 5; arrow keys go up), with stars filled up to the choice.
   - The distribution has visible bars plus text ("5 stars: 12 reviews, 60%").
   - Admin hide/show buttons stay enabled while saving (`aria-busy` plus a guard against double presses), because disabling them dropped keyboard focus to the page. Found in the browser pass; regression test shown failing on the old code. The same pattern elsewhere is K12.
+
+## D029: Production hosting of the SPA, CSP, compression, HSTS and proxies (M12)
+- **The API serves the built SPA** when `Spa__RootPath` points at `npm run build` output; otherwise (development) it serves no pages.
+  - Hashed bundles are cached for a year as immutable; `index.html` is `no-cache`, so a deploy shows on the next load.
+  - Deep links fall back to `index.html` through a named route constraint (`spa`): every path except `/api` and `/health`. Unknown API routes keep their 401/404 problem details. Missing files fall under the fallback policy (401 for guests), as SPEC section 7 says for every unmatched request.
+- **K1, strict CSP unchanged** (`script-src 'self'; style-src 'self'`). Reproduced on the build served by the API: 3 violations per page and an unstyled site. Two causes:
+  - Angular's critical-CSS inlining (an inline `<style>` plus an inline `onload` script) is now off in the production configuration.
+  - The CDK `MediaMatcher` inserts an empty `<style>` in Blink and WebKit (used by the A11yModule's high-contrast detector). `CspSafeMediaMatcher` calls `matchMedia` directly.
+  - Result: 0 violations on all 30 audited screens. No nonces were needed.
+- **Compression, static files only:**
+  - `npm run build` writes `.br` (quality 11) and `.gz` (level 9) copies (`scripts/precompress.mjs`); the API serves them when the browser accepts them, with `Vary: Accept-Encoding`.
+  - Anything without a copy (`index.html`) is compressed on the fly.
+  - Nothing under `/api` or `/health` is compressed: responses that mix user data and secrets over HTTPS invite BREACH-style attacks.
+  - Measured: Brotli quality 11 costs about 300 ms per bundle (fine once at build time, not per request) and is about 25 % smaller than quality 1.
+- **HSTS** (`max-age` one year) outside Development; ASP.NET sends it only on HTTPS and never for localhost.
+- **K5, forwarded headers:** trusted only from `ReverseProxy__KnownProxies`/`KnownNetworks` (nearest hop, `ForwardLimit` 1). With nothing configured the headers are ignored, so a client cannot claim a fresh IP to reset its rate limits.
+- **K3:** the EF migrations history table is created before migrating, so the first start on an empty database logs no error.
+- **Cumulative layout shift:** `<main>` is at least one viewport tall, so the footer starts below the fold and cannot move into view when content arrives (Lighthouse CLS 0.249 → 0).
+
+## D030: Demo mode (M12)
+- **Switch:** `DEMO_MODE=true` (public deployment only). `GET /api/meta` tells the SPA, which shows a banner on every page.
+- **Reset** (`POST /api/admin/demo/reset`, admin; 404 when demo mode is off; 2 per minute):
+  - One transaction under a PostgreSQL advisory lock, so a manual and a scheduled reset, or two instances, never overlap.
+  - Steps: truncate the shop data, delete every account except the two demo accounts, restart the order-number sequence, then run the four seeders again.
+  - The seeders join the surrounding transaction (`JoinableTransaction`), so a failure rolls everything back.
+- **Demo accounts are kept**, with their names and roles restored and any lockout cleared, so the admin who pressed the button stays signed in. Everyone else's session ends, because their account no longer exists.
+- **Schedule:** a `BackgroundService` repeats the reset every `DEMO_RESET_INTERVAL_HOURS` (default 6, 0 = off), driven by `TimeProvider`. Failures are logged and the next tick tries again.
+- **Guard:** there are no user-management endpoints, so nothing can delete or demote the demo admin. The real risk is a visitor changing the shared demo passwords and locking everyone out, so demo mode refuses password changes on the demo accounts (403 `demo-account`).
+
+## D031: Accessibility and UX decisions from the M12 audit
+- **Busy buttons** (K12): a `BusyButton` directive replaces `disabled` while a request runs. It sets `aria-disabled` and `aria-busy` and swallows clicks in the capture phase, which also stops Enter-key form submits. Limits such as out of stock still use `disabled`. Where the pressed button disappears (order status, cancel), focus moves to the section heading.
+- **Focus rings:** stretched card links draw the standard 3 px ring on the card (`has-[a:focus-visible]`). Date inputs get the ring through `:focus-within`, because their focus sits in the date segments.
+- **Colour:** the light-theme success colour is `#166534`, at least 4.5:1 also on its own 10 % tint.
+- **Header:** the wordmark wraps onto two lines below 360 px instead of pushing the buttons off-screen.
+- **K8, brand facets:** `/api/catalog/brands?department=` returns brands with active products in that department, counted there.
+- **Static pages:** About (the portfolio project, invented data, AI assistance, repository link) and Contact/FAQ (CDK accordion, no personal contact data). The placeholder page they replaced was deleted as dead code, as the M12 brief asks.
+- **K2:** the owner approved the `lmdb` and `msgpackr-extract` install scripts, pinned to exact versions in `package.json` `allowScripts`.

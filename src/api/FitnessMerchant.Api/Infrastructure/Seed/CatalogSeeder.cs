@@ -79,7 +79,7 @@ public sealed partial class CatalogSeeder(AppDbContext db, TimeProvider time, IL
             };
         }).ToList();
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await JoinableTransaction.BeginAsync(db, cancellationToken);
         db.Products.AddRange(products); // categories, brands and images are added through the navigations
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

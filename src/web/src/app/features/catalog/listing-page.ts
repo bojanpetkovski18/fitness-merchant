@@ -72,7 +72,11 @@ export class ListingPage {
     productsApiUrl(this.query(), this.department()),
   );
   private readonly departments = httpResource<DepartmentInfo[]>(() => '/api/catalog/departments');
-  protected readonly brands = httpResource<BrandInfo[]>(() => '/api/catalog/brands');
+  /** Brands with products in this department only (K8). */
+  protected readonly brands = httpResource<BrandInfo[]>(() => ({
+    url: '/api/catalog/brands',
+    params: { department: this.department() },
+  }));
   protected readonly categories = computed(
     () =>
       (this.departments.hasValue() ? this.departments.value() : []).find(

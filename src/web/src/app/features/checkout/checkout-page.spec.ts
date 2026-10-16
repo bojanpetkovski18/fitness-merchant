@@ -139,8 +139,11 @@ describe('CheckoutPage', () => {
     const place = button('Place order');
     place.click();
     await settle();
-    expect(place.disabled).toBe(true);
+    // Busy, not disabled (K12): it keeps keyboard focus, and a second press sends nothing.
+    expect(place.getAttribute('aria-disabled')).toBe('true');
     expect(place.textContent).toContain('Placing order…');
+    place.click();
+    await settle();
 
     const request = backend.expectOne('/api/checkout');
     expect(request.request.headers.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/);
@@ -197,5 +200,48 @@ describe('CheckoutPage', () => {
     expect(element.querySelector('#ship-postalCode-error')?.textContent).toContain(
       'Enter a valid postal code.',
     );
+  });
+});
+
+describe('CheckoutPage before the cart has loaded', () => {
+  it('waits for the cart, and explains a failed load with a retry instead of an empty form', async () => {
+    // M12 states audit: the steps used to render over a cart that was still loading or had failed.
+    localStorage.clear();
+    guestCartStorage.write([{ productId, quantity: 1 }]);
+    TestBed.configureTestingModule({
+      imports: [CheckoutPage],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: '**', component: Blank }]),
+      ],
+    });
+    const backend = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(CheckoutPage);
+    const element = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(element);
+    TestBed.tick();
+    const quote = backend.expectOne('/api/cart/quote');
+
+    expect(element.querySelector('[role="status"]')?.textContent).toContain('Loading your cart');
+    expect(element.querySelector('#step-1-heading')).toBeNull();
+
+    quote.flush(null, { status: 500, statusText: 'Server Error' });
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain(
+      "Couldn't load your cart",
+    );
+    expect(element.querySelector('#step-1-heading')).toBeNull();
+
+    [...element.querySelectorAll('button')]
+      .find((b) => b.textContent?.includes('Try again'))!
+      .click();
+    TestBed.tick();
+    backend.expectOne('/api/cart/quote').flush(cart);
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+    expect(element.querySelector('#step-1-heading')).not.toBeNull();
+    element.remove();
   });
 });

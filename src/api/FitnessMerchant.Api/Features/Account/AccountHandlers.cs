@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using FitnessMerchant.Api.Features.Admin;
 using FitnessMerchant.Api.Features.Auth;
 using FitnessMerchant.Api.Infrastructure.Identity;
+using FitnessMerchant.Api.Infrastructure.Seed;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 
@@ -40,14 +42,23 @@ public sealed class UpdateProfileHandler(UserManager<AppUser> users, GetSessionQ
 /// Changing the password rotates the security stamp (Identity does this), which ends every other session on the
 /// next request (D025). This session is re-issued with the new stamp so the user stays signed in here.
 /// </summary>
-public sealed class ChangePasswordHandler(UserManager<AppUser> users, SignInManager<AppUser> signIn, XsrfCookie xsrf)
+public sealed class ChangePasswordHandler(
+    UserManager<AppUser> users, SignInManager<AppUser> signIn, XsrfCookie xsrf, DemoOptions demo, IConfiguration configuration)
 {
-    public async Task<Results<NoContent, ValidationProblem, UnauthorizedHttpResult>> ExecuteAsync(
+    public async Task<Results<NoContent, ValidationProblem, UnauthorizedHttpResult, ProblemHttpResult>> ExecuteAsync(
         ChangePasswordRequest request, HttpContext context)
     {
         if (await users.GetUserAsync(context.User) is not { } user)
         {
             return TypedResults.Unauthorized();
+        }
+
+        // The demo accounts are shared by every visitor: a changed password would lock everyone else out (D030).
+        if (demo.Enabled && DemoUserSeeder.DemoEmails(configuration).Contains(user.NormalizedEmail ?? ""))
+        {
+            return TypedResults.Problem(statusCode: StatusCodes.Status403Forbidden,
+                title: "The demo account's password cannot be changed. Register your own account to try this.",
+                extensions: new Dictionary<string, object?> { ["code"] = "demo-account" });
         }
 
         var changed = await users.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);

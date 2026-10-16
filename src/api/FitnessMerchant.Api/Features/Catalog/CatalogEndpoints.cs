@@ -1,3 +1,5 @@
+using FitnessMerchant.Api.Domain.Catalog;
+
 namespace FitnessMerchant.Api.Features.Catalog;
 
 public static class CatalogEndpoints
@@ -15,7 +17,17 @@ public static class CatalogEndpoints
 
         catalog.MapGet("/departments", (GetDepartmentsQuery query, CancellationToken ct) => query.ExecuteAsync(ct));
 
-        catalog.MapGet("/brands", (ListBrandsQuery query, CancellationToken ct) => query.ExecuteAsync(slug: null, ct));
+        catalog.MapGet("/brands", async (string? department, ListBrandsQuery query, CancellationToken ct) =>
+        {
+            if (string.IsNullOrEmpty(department))
+            {
+                return Results.Ok(await query.ExecuteAsync(slug: null, ct));
+            }
+            // Same rule as the product list: a department name, not a number.
+            return Enum.TryParse<Department>(department, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) && !department.All(char.IsAsciiDigit)
+                ? Results.Ok(await query.ExecuteAsync(slug: null, ct, parsed))
+                : Results.ValidationProblem(new Dictionary<string, string[]> { ["department"] = ["Department must be 'supplements' or 'gear'."] });
+        });
 
         catalog.MapGet("/brands/{slug}", async (string slug, ListBrandsQuery query, CancellationToken ct) =>
             (await query.ExecuteAsync(slug, ct)) is [var brand] ? Results.Ok(brand) : Results.NotFound());

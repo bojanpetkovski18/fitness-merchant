@@ -10,6 +10,7 @@ import {
   maxUploadBytes,
 } from '../../core/admin/admin.models';
 import { Page } from '../../core/catalog/catalog.models';
+import { BusyButton } from '../../shared/ui/busy-button';
 import { toApiProblem } from '../../core/http/api-problem';
 
 let nextId = 0;
@@ -21,6 +22,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'app-image-picker',
+  imports: [BusyButton],
   template: `
     <fieldset [attr.aria-describedby]="hintId">
       <legend class="text-sm font-semibold">{{ label() }}</legend>
@@ -44,16 +46,16 @@ let nextId = 0;
             <button
               #uploadButton
               type="button"
-              class="rounded-md border border-border px-3 py-2 text-sm font-bold hover:bg-surface-2 disabled:opacity-60"
-              [disabled]="uploading()"
+              class="rounded-md border border-border px-3 py-2 text-sm font-bold hover:bg-surface-2 aria-disabled:opacity-60"
+              [appBusy]="uploading()"
               (click)="fileInput.click()"
             >
               Upload image
             </button>
             <button
               type="button"
-              class="rounded-md border border-border px-3 py-2 text-sm font-bold hover:bg-surface-2 disabled:opacity-60"
-              [disabled]="uploading()"
+              class="rounded-md border border-border px-3 py-2 text-sm font-bold hover:bg-surface-2 aria-disabled:opacity-60"
+              [appBusy]="uploading()"
               (click)="openLibrary()"
             >
               Choose existing

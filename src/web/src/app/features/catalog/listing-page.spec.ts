@@ -60,7 +60,8 @@ describe('ListingPage', () => {
         categories: [{ slug: 'protein', name: 'Protein', description: null }],
       },
     ]);
-    backend.expectOne('/api/catalog/brands').flush([]);
+    // K8: only brands with products in this department.
+    backend.expectOne('/api/catalog/brands?department=supplements').flush([]);
   }
 
   /** Lets a click-triggered navigation finish, then renders; the new products request is left for the test. */

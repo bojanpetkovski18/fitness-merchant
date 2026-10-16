@@ -1,5 +1,7 @@
 using FitnessMerchant.Api.Infrastructure.Seed;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 
 namespace FitnessMerchant.Api.Infrastructure.Data;
@@ -52,6 +54,10 @@ public static class DatabaseSetup
         if (options.MigrateOnStartup)
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            // K3: on an empty database the migrator first queries a history table that does not exist yet and logs
+            // that failure as an error (its existence check is that query). Creating the table first avoids it:
+            // EF's own repository, CREATE TABLE IF NOT EXISTS, so a no-op on every later start.
+            await db.GetService<IHistoryRepository>().CreateIfNotExistsAsync();
             await db.Database.MigrateAsync();
         }
 

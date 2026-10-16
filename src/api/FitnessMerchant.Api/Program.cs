@@ -8,6 +8,7 @@ using FitnessMerchant.Api.Features.Cart;
 using FitnessMerchant.Api.Features.Catalog;
 using FitnessMerchant.Api.Features.Health;
 using FitnessMerchant.Api.Features.Images;
+using FitnessMerchant.Api.Features.Meta;
 using FitnessMerchant.Api.Features.Orders;
 using FitnessMerchant.Api.Features.Reviews;
 using FitnessMerchant.Api.Infrastructure.Data;
@@ -34,6 +35,10 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower)));
 builder.Services.AddValidation();
 builder.Services.AddOpenApi();
+builder.Services.AddAppForwardedHeaders(builder.Configuration);
+builder.Services.AddAppSpa();
+// SPEC section 9: HSTS in production. Sent only on HTTPS responses, and never for localhost.
+builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.AddAppDatabase();
 builder.AddAppAuth();
@@ -52,9 +57,15 @@ var app = builder.Build();
 
 await app.InitializeDatabaseAsync();
 
+app.UseAppForwardedHeaders();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseAppSpaFiles();
 app.UseRateLimiter();
 app.UseAppAuth();
 
@@ -65,6 +76,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthEndpoints();
+app.MapMetaEndpoints();
 app.MapImageEndpoints();
 app.MapAuthEndpoints();
 app.MapAccountEndpoints();
@@ -73,6 +85,9 @@ app.MapCartEndpoints();
 app.MapOrderEndpoints();
 app.MapReviewEndpoints();
 app.MapAdminEndpoints();
+
+// Last: anything still unmatched outside /api and /health is a client-side route of the SPA.
+app.MapAppSpaFallback();
 
 // Test seam: integration tests register extra endpoints (e.g. an admin-only probe). Production registers none.
 foreach (var mapper in app.Services.GetServices<IEndpointMapper>())
