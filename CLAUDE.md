@@ -42,7 +42,7 @@ Dockerfile, docker-compose.yml, FitnessMerchant.slnx
 ## Commands
 Fill this in only after a command has actually been run and verified. Format: command, then what it does, then the date verified.
 
-All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.401, Node 24.20.0, Docker 29.8.2. Run from the repo root unless a directory is given.
+All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.402 (re-verified 2026-10-16 after the K14 update), Node 24.20.0, Docker 29.8.2. Run from the repo root unless a directory is given.
 
 **One-time setup**
 - `cp .env.example .env`: local settings; `.env` is git-ignored. Its `DEMO_*` values create the local demo admin and customer on API start (passwords need 10+ characters with upper, lower, digit and symbol).
