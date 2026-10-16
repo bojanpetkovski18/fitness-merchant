@@ -1,17 +1,5 @@
-import { CanActivateFn, Route, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { adminGuard, authGuard, guestGuard } from './core/auth/auth.guards';
-
-/** A lazy placeholder for a screen that a later milestone replaces (SPEC section 6). */
-function planned(path: string, heading: string, milestone: string, guard?: CanActivateFn): Route {
-  return {
-    path,
-    title: heading,
-    canActivate: guard ? [guard] : [],
-    loadComponent: () =>
-      import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage),
-    data: { heading, milestone },
-  };
-}
 
 export const routes: Routes = [
   {
@@ -199,8 +187,24 @@ export const routes: Routes = [
       },
     ],
   },
-  planned('about', 'About', 'M12'),
-  planned('contact', 'Contact', 'M12'),
+  {
+    path: 'about',
+    title: 'About',
+    data: {
+      description:
+        'Fitness Merchant is a portfolio project with invented data, built with AI assistance.',
+    },
+    loadComponent: () => import('./features/static/about-page').then((m) => m.AboutPage),
+  },
+  {
+    path: 'contact',
+    title: 'Contact and FAQ',
+    data: {
+      description:
+        'Questions about the Fitness Merchant demo: payments, reviews, data and shipping.',
+    },
+    loadComponent: () => import('./features/static/contact-page').then((m) => m.ContactPage),
+  },
   {
     path: '**',
     title: 'Page not found',

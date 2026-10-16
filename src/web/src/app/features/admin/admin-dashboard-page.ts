@@ -1,10 +1,16 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { HttpErrorResponse, httpResource } from '@angular/common/http';
-import { Component, computed, inject, input, linkedSignal } from '@angular/core';
+import { Dialog } from '@angular/cdk/dialog';
+import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
+import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Dashboard, lastDays } from '../../core/admin/admin.models';
 import { toApiProblem } from '../../core/http/api-problem';
+import { MetaStore } from '../../core/meta.store';
+import { ToastService } from '../../core/ui/toast.service';
+import { BusyButton } from '../../shared/ui/busy-button';
+import { confirmAction } from '../../shared/ui/confirm-dialog';
 import { ErrorState } from '../../shared/ui/states';
+import { firstValueFrom } from 'rxjs';
 
 const presets = [7, 30, 90] as const;
 type Preset = (typeof presets)[number];
@@ -17,7 +23,7 @@ const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR'
  */
 @Component({
   selector: 'app-admin-dashboard-page',
-  imports: [RouterLink, CurrencyPipe, DatePipe, ErrorState],
+  imports: [RouterLink, CurrencyPipe, DatePipe, ErrorState, BusyButton],
   template: `
     <h1 class="fm-display text-3xl md:text-4xl">Dashboard</h1>
 
@@ -270,10 +276,39 @@ const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR'
         <p role="status" class="text-muted">Loading the dashboard…</p>
       }
     </div>
+
+    @if (meta.demoMode()) {
+      <section
+        aria-labelledby="demo-heading"
+        class="mt-8 rounded-xl border border-border bg-surface p-4"
+      >
+        <h2 id="demo-heading" class="font-bold">Demo data</h2>
+        <p class="mt-1 text-sm text-muted">
+          Put every product, order, review and image back to the seed and delete visitor accounts.
+          The demo accounts stay signed in.
+          @if (meta.resetIntervalHours(); as hours) {
+            This also happens automatically every {{ hours }} hours.
+          }
+        </p>
+        <button
+          type="button"
+          class="mt-3 rounded-md border border-danger px-4 py-2 text-sm font-bold text-danger hover:bg-danger hover:text-bg aria-disabled:opacity-60"
+          [appBusy]="resetting()"
+          (click)="resetDemo()"
+        >
+          {{ resetting() ? 'Resetting…' : 'Reset demo data now' }}
+        </button>
+      </section>
+    }
   `,
 })
 export class AdminDashboardPage {
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
+  private readonly dialog = inject(Dialog);
+  private readonly toasts = inject(ToastService);
+  protected readonly meta = inject(MetaStore);
+  protected readonly resetting = signal(false);
 
   // Query parameters: ?days=7|30|90, or ?from=…&to=… for a custom range.
   readonly days = input<string>();
@@ -340,5 +375,33 @@ export class AdminDashboardPage {
   protected applyCustom(from: string, to: string): void {
     if (!from || !to) return;
     void this.router.navigate([], { queryParams: { days: null, from, to } });
+  }
+
+  protected async resetDemo(): Promise<void> {
+    const confirmed = await confirmAction(this.dialog, {
+      title: 'Reset the demo data?',
+      message:
+        'Everything visitors changed is removed and the seed data comes back. This cannot be undone.',
+      confirmLabel: 'Reset demo data',
+      dismissLabel: 'Keep the data',
+    });
+    if (!confirmed) return;
+    this.resetting.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ products: number; orders: number; reviews: number }>(
+          '/api/admin/demo/reset',
+          null,
+        ),
+      );
+      this.toasts.show(
+        `Demo data reset: ${result.products} products, ${result.orders} orders, ${result.reviews} reviews.`,
+      );
+      this.dashboard.reload();
+    } catch (error) {
+      this.toasts.error(toApiProblem(error).title);
+    } finally {
+      this.resetting.set(false);
+    }
   }
 }

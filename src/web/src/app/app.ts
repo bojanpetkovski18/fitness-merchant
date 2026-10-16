@@ -5,10 +5,11 @@ import { filter } from 'rxjs';
 import { SiteFooter } from './core/layout/site-footer';
 import { SiteHeader } from './core/layout/site-header';
 import { ToastHost } from './core/ui/toast-host';
+import { DemoBanner } from './core/layout/demo-banner';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SiteHeader, SiteFooter, ToastHost],
+  imports: [RouterOutlet, DemoBanner, SiteHeader, SiteFooter, ToastHost],
   templateUrl: './app.html',
 })
 export class App {

@@ -6,10 +6,12 @@ import {
   TestRequest,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
+import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { AdminOrder, Dashboard } from '../../core/admin/admin.models';
 import { Order } from '../../core/orders/order.models';
+import { MetaStore } from '../../core/meta.store';
 import { ToastService } from '../../core/ui/toast.service';
 import { AdminDashboardPage } from './admin-dashboard-page';
 import { AdminOrderPage } from './admin-order-pages';
@@ -71,13 +73,23 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
 
 describe('Admin orders and dashboard', () => {
   let backend: HttpTestingController;
+  /** Deployment facts without HTTP; a test flips demo mode by setting the signal. */
+  let meta: {
+    demoMode: WritableSignal<boolean>;
+    resetIntervalHours: WritableSignal<number | null>;
+  };
 
   beforeEach(() => {
+    meta = { demoMode: signal(false), resetIntervalHours: signal(null) };
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([], withComponentInputBinding()),
+        {
+          provide: MetaStore,
+          useValue: meta,
+        },
         // jsdom has no layout: let the CDK focus trap treat rendered controls as focusable.
         {
           provide: InteractivityChecker,
@@ -283,6 +295,41 @@ describe('Admin orders and dashboard', () => {
       );
       await settle(fixture);
       expect(element.querySelector('[role="alert"]')?.textContent).toContain('at most 366 days');
+    });
+
+    it('offers the demo reset only in demo mode, after a confirmation', async () => {
+      const plain = await render();
+      (await nextRequest((r) => r.url === '/api/admin/dashboard')).flush(dashboard);
+      await settle(plain.fixture);
+      expect(plain.element.textContent).not.toContain('Reset demo data now');
+      document.body.innerHTML = '';
+
+      meta.demoMode.set(true);
+      meta.resetIntervalHours.set(6);
+      const { fixture, element } = await render();
+      (await nextRequest((r) => r.url === '/api/admin/dashboard')).flush(dashboard);
+      await settle(fixture);
+      const button = Array.from(element.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Reset demo data now'),
+      )!;
+      expect(element.textContent).toContain('every 6 hours');
+
+      button.click();
+      await settle(fixture);
+      const dialog = document.querySelector<HTMLElement>('[role="alertdialog"]')!;
+      Array.from(dialog.querySelectorAll('button'))
+        .find((b) => b.textContent?.trim() === 'Reset demo data')!
+        .click();
+      const reset = await nextRequest((r) => r.method === 'POST');
+      expect(reset.request.url).toBe('/api/admin/demo/reset');
+      reset.flush({ resetAt: '2026-10-16T10:00:00Z', products: 62, orders: 40, reviews: 34 });
+      (await nextRequest((r) => r.url === '/api/admin/dashboard')).flush(dashboard); // refreshed numbers
+      await settle(fixture);
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toContain('Demo data reset: 62 products, 40 orders, 34 reviews.');
     });
   });
 });
