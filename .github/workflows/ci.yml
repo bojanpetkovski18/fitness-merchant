@@ -86,6 +86,49 @@ jobs:
       - name: Build (production)
         run: npm run build
 
+  e2e:
+    name: E2E (production image)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: src/web/.nvmrc
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      # The placeholders are enough: the stack is local to the runner and seeds the demo admin from them.
+      - name: Start the stack
+        run: |
+          cp .env.example .env
+          docker compose up --build --detach --wait --wait-timeout 180
+
+      - name: Install Playwright
+        working-directory: tests/e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Run the journey
+        working-directory: tests/e2e
+        run: npx playwright test
+
+      - name: Show app logs
+        if: failure()
+        run: docker compose logs --no-color app
+
+      - name: Upload the report and trace
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/test-results/
+          retention-days: 7
+
   secret-scan:
     name: Secret scan (full history)
     runs-on: ubuntu-latest
