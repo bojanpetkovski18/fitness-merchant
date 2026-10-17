@@ -1,0 +1,17 @@
+# Keep the build context small and free of secrets: only what the Dockerfile copies is needed.
+**/.env
+**/.env.*
+!.env.example
+.git
+.github
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.angular
+**/TestResults
+tests
+docs
+prompts
+tools
+*.md

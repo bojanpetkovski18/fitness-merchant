@@ -1,0 +1,13 @@
+{
+  "name": "fitness-merchant-e2e",
+  "private": true,
+  "description": "One Playwright journey against the production image (docker compose up --build).",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0"
+  }
+}
