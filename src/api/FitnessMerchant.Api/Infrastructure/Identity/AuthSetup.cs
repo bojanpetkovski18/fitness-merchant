@@ -1,4 +1,5 @@
 using FitnessMerchant.Api.Infrastructure.Data;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
@@ -23,9 +24,15 @@ public static class AuthSetup
 
         // D032: the keys behind session and antiforgery cookies live in PostgreSQL, so sessions survive a container
         // restart and work on every instance. A fixed application name keeps them valid whatever the install path.
-        builder.Services.AddDataProtection()
-            .SetApplicationName("FitnessMerchant")
-            .Services.AddSingleton<IConfigureOptions<KeyManagementOptions>, DatabaseKeyRepositorySetup>();
+        var dataProtection = builder.Services.AddDataProtection().SetApplicationName("FitnessMerchant");
+        dataProtection.Services.AddSingleton<IConfigureOptions<KeyManagementOptions>, DatabaseKeyRepositorySetup>();
+        // D034: on the deployment the keys are also encrypted with a certificate kept outside the database (a mounted
+        // secret: certificate and private key in one PEM file), so a database leak alone cannot forge sessions.
+        if (builder.Configuration["DataProtection:CertificatePemPath"] is { Length: > 0 } pemPath)
+        {
+            var certificate = X509Certificate2.CreateFromPemFile(pemPath);
+            dataProtection.ProtectKeysWithCertificate(certificate).UnprotectKeysWithAnyCertificate(certificate);
+        }
 
         builder.Services
             .AddIdentityCore<AppUser>(options =>

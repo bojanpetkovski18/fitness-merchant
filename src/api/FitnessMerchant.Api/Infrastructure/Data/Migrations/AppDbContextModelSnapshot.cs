@@ -18,7 +18,7 @@ namespace FitnessMerchant.Api.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -701,6 +701,25 @@ namespace FitnessMerchant.Api.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5");
 
                             t.HasCheckConstraint("ck_reviews_title", "char_length(title) BETWEEN 3 AND 80");
+                        });
+                });
+
+            modelBuilder.Entity("FitnessMerchant.Api.Features.Admin.DemoState", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("LastResetAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reset_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_demo_state");
+
+                    b.ToTable("demo_state", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_demo_state_singleton", "id = 1");
                         });
                 });
 

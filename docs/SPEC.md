@@ -6,7 +6,7 @@ Status: v0.2 (Phase 0), 2026-10-13. Phase 0 questions resolved: name kept, Strip
 
 Fitness Merchant is an online store for fitness supplements and training gear. Shoppers browse and filter a catalog, keep a cart, check out and track their orders. Staff manage the catalog, process orders and see sales at a glance.
 
-It is a rebuild of the author's 2024 university thesis project (FitHub / Fitness Merchant: .NET 8, Angular 17, SQL Server). The rebuild aims to be a polished, modern and fully working portfolio piece. It shows the full product lifecycle: specification, secure API design, a modern Angular UI, tests at three levels, containerization, CI and a deployed demo.
+It is a rebuild of the author's 2024 university thesis project (FitHub / Fitness Merchant: .NET 8, Angular 17, SQL Server). The rebuild aims to be a polished, modern and fully working portfolio piece. It shows the full product lifecycle: specification, secure API design, a modern Angular UI, tests at three levels, containerization, CI and a one-step demo (Docker or GitHub Codespaces).
 
 - **Context:** an independent portfolio project built with AI assistance. The README says so.
 - **Data:** fictional only. The store "Fitness Merchant" and all of its brands, products, users, addresses and orders are invented. The project uses no real brand names, logos, product photos or third-party videos, and no real personal data. The thesis code is a reference for features only; no code is copied from it.
@@ -32,7 +32,7 @@ New users are always registered as Customer. Admins exist only through seeding o
 | JWT signing key and connection string committed | Secrets come only from the environment |
 | Every query loads whole tables into memory | Filtering, paging and aggregation run in SQL |
 | Checkout ignored the cart; no stock check; orders not linked to users | Orders are built server-side from the cart in one transaction, with a stock check and price snapshots |
-| No tests, no CI, no deployment | Unit, integration (real Postgres), component and E2E tests; CI; Docker; deployed demo |
+| No tests, no CI, no deployment | Unit, integration (real Postgres), component and E2E tests; CI; Docker; one-step demo (Codespaces) |
 
 ## 4. Features
 
@@ -76,7 +76,7 @@ New users are always registered as Customer. Admins exist only through seeding o
   - status transitions allowed only by the state machine.
 - F15 Dashboard for a date range: revenue, order count, average order value, revenue per day (chart), top 5 products and low-stock list. All aggregated in SQL.
 - F16 CSV export of orders for a date range, protected against formula injection.
-- F17 Demo reset: an admin action plus a scheduled job (deployed demo only). Both restore the seed data.
+- F17 Demo reset: an admin action plus a scheduled job (demo mode only, `DEMO_MODE=true`). Both restore the seed data.
 
 **Cross-cutting**
 - F18 Light and dark themes (dark by default, carrying over v1's identity: near-black with an amber/gold accent), using the system preference with a manual toggle.
@@ -240,7 +240,7 @@ Review      Id, ProductId, UserId, Rating 1–5, Title, Body, IsHidden, CreatedA
 7. The dashboard totals match a SQL check over the seed data; the CSV export opens cleanly and neutralizes formula cells.
 8. Every screen passes the 375/768/1280, keyboard, console-clean and axe checks.
 9. `docker compose up` from a fresh clone runs the whole stack; the Playwright flow passes against it in CI.
-10. The deployed demo works with the documented demo credentials; its limits, cold starts and cost are documented.
+10. The demo works with the documented demo credentials from a fresh clone (`docker compose up`) and from "Open in GitHub Codespaces"; the README shows it with screenshots and a short recording. (Changed 2026-10-19 by the owner, D034: no public hosting.)
 
 ## 11. Delivery plan
 

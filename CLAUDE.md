@@ -13,7 +13,7 @@ The human owner is a professional full-stack developer who supervises, reviews a
   - integration tests with `WebApplicationFactory` and Testcontainers PostgreSQL;
   - Angular component tests;
   - one Playwright E2E flow.
-- **Infra:** Docker Compose for local dev; one production image (the API serves the SPA); GitHub Actions CI; host chosen at M14.
+- **Infra:** Docker Compose for local dev; one production image (the API serves the SPA); GitHub Actions CI; no public hosting (D034): the demo runs with Docker Compose or in GitHub Codespaces (`.devcontainer/`).
 
 Exact versions are pinned in the project files; see `DECISIONS.md` for the reasons.
 
@@ -82,6 +82,12 @@ All verified 2026-10-13 on Windows 11 (Git Bash), .NET SDK 10.0.402 (re-verified
 **E2E** (`tests/e2e`, with the stack running)
 - `npm ci` then `npx playwright install chromium`: one-time setup.
 - `npx playwright test`: the journey against `E2E_BASE_URL` (default `http://localhost:8080`), about 7–12 s. It reads the repo-root `.env` for the demo admin. On failure, `npx playwright show-trace test-results/*/trace.zip`.
+
+**Codespaces dev container** (verified 2026-10-19, M14)
+- `npx @devcontainers/cli@0.89.0 up --workspace-folder .`: starts `.devcontainer/devcontainer.json` the way Codespaces does (Docker-in-Docker, then `docker compose up --build`). About 15 min from cold caches. Check it with `npx @devcontainers/cli@0.89.0 exec --workspace-folder . curl -s http://localhost:8080/health`.
+
+**Security scan before going public** (verified 2026-10-19, M14)
+- `gitleaks git --redact .` and `gitleaks dir --redact .`: secrets in the full history and the working tree. Download gitleaks 8.30.1 from its GitHub release and check the SHA-256 against the release's `checksums.txt` (CI uses the same version).
 
 **CI**
 - `.github/workflows/ci.yml` runs the same commands, plus a gitleaks history scan, actionlint and editorconfig-checker.

@@ -96,11 +96,80 @@ public class DemoResetTests(PostgresFixture postgres)
         Assert.Equal(new MetaResponse(true, 6), await guest.Http.GetFromJsonAsync<MetaResponse>("/api/meta", Ct));
     }
 
+    [Fact]
+    public async Task An_overdue_reset_runs_when_the_app_starts()
+    {
+        // A scale-to-zero host (Cloud Run) never keeps one process alive for the 6-hour interval, so the schedule
+        // must come from the database: a new instance resets at once when the last reset is older than that.
+        var connectionString = await postgres.CreateDatabaseAsync();
+        await AddVisitorProductAsync(connectionString);
+        await SetLastResetAsync(connectionString, DateTimeOffset.UtcNow.AddHours(-7));
+
+        // The overdue reset seeds the demo accounts itself, as soon as the app starts; seeding them here as well would
+        // race it for the same rows.
+        await using var factory = await StartDemoAsync(connectionString, seedDemoUsers: false);
+
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(20);
+        while (await VisitorProductsAsync(connectionString) > 0 && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(200, Ct);
+        }
+        Assert.Equal(0, await VisitorProductsAsync(connectionString));
+        Assert.True(await Db(connectionString, db => db.DemoState.SingleAsync(Ct)) is { LastResetAt: var at } && at > DateTimeOffset.UtcNow.AddMinutes(-1));
+    }
+
+    [Fact]
+    public async Task A_reset_that_is_not_due_leaves_the_data_alone()
+    {
+        var connectionString = await postgres.CreateDatabaseAsync();
+        await using var factory = await StartDemoAsync(connectionString);
+        await AddVisitorProductAsync(connectionString);
+        await SetLastResetAsync(connectionString, DateTimeOffset.UtcNow.AddHours(-5));
+
+        using var scope = factory.Services.CreateScope();
+        var reset = await scope.ServiceProvider.GetRequiredService<DemoResetService>().ResetIfOverdueAsync(TimeSpan.FromHours(6), Ct);
+
+        Assert.False(reset);
+        Assert.Equal(1, await VisitorProductsAsync(connectionString));
+    }
+
+    [Fact]
+    public async Task The_first_check_on_a_fresh_database_records_the_seed_instead_of_resetting()
+    {
+        var connectionString = await postgres.CreateDatabaseAsync();
+        await using var factory = await StartDemoAsync(connectionString);
+        await Db(connectionString, db => db.DemoState.ExecuteDeleteAsync(Ct));
+        await AddVisitorProductAsync(connectionString);
+
+        using var scope = factory.Services.CreateScope();
+        var reset = await scope.ServiceProvider.GetRequiredService<DemoResetService>().ResetIfOverdueAsync(TimeSpan.FromHours(6), Ct);
+
+        Assert.False(reset);
+        Assert.Equal(1, await VisitorProductsAsync(connectionString));
+        Assert.Equal(1, await Db(connectionString, db => db.DemoState.CountAsync(Ct)));
+    }
+
     // --- helpers ---
+
+    private static async Task AddVisitorProductAsync(string connectionString)
+    {
+        await using var db = PostgresFixture.CreateDbContext(connectionString);
+        var category = await db.Categories.FirstAsync(Ct);
+        var brand = await db.Brands.FirstAsync(Ct);
+        db.Products.Add(TestCatalog.Product(category, brand, "visitor-product", sku: "VISITOR-1"));
+        await db.SaveChangesAsync(Ct);
+    }
+
+    private static Task<int> VisitorProductsAsync(string connectionString) =>
+        Db(connectionString, db => db.Products.CountAsync(p => p.Sku == "VISITOR-1", Ct));
+
+    private static Task<int> SetLastResetAsync(string connectionString, DateTimeOffset at) =>
+        Db(connectionString, db => db.Database.ExecuteSqlAsync(
+            $"INSERT INTO demo_state (id, last_reset_at) VALUES (1, {at}) ON CONFLICT (id) DO UPDATE SET last_reset_at = EXCLUDED.last_reset_at", Ct));
 
     private sealed record Counts(int Products, int Categories, int Brands, int Images, int Orders, int Reviews, int Users);
 
-    private static async Task<ApiFactory> StartDemoAsync(string connectionString)
+    private static async Task<ApiFactory> StartDemoAsync(string connectionString, bool seedDemoUsers = true)
     {
         var factory = new ApiFactory(connectionString, new Dictionary<string, string?>
         {
@@ -111,7 +180,10 @@ public class DemoResetTests(PostgresFixture postgres)
             ["DEMO_CUSTOMER_PASSWORD"] = CustomerPassword,
         });
         using var scope = factory.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<DemoUserSeeder>().SeedAsync();
+        if (seedDemoUsers)
+        {
+            await scope.ServiceProvider.GetRequiredService<DemoUserSeeder>().SeedAsync();
+        }
         return factory;
     }
 
