@@ -551,3 +551,8 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - **Demo reset schedule in the database** (`demo_state`): each instance resets at startup and every 10 minutes once the last reset is `DEMO_RESET_INTERVAL_HOURS` old, because a scale-to-zero host never keeps one process alive that long. A regression test showed the old in-process timer never firing.
   - **Data-protection keys encrypted with a certificate** when `DataProtection__CertificatePemPath` names a PEM file (certificate plus private key), so a database leak alone cannot forge sessions. Not set locally.
   - **`ReverseProxy__ForwardLimit`** (1 to 3): how many trusted hops to read from X-Forwarded-For. A test shows why it matters: with one hop behind a front end that appends itself, every client shares one sign-in budget.
+
+## D035: MIT licence (2026-10-19)
+- **Decision:** the repository is MIT-licensed (`LICENSE`, copyright Bojan Petkovski). The agent recommended it when the owner asked to complete the final steps; the owner can switch to "All rights reserved" by replacing `LICENSE` and the README section.
+- **Why:** a portfolio repository is meant to be read and tried; MIT is short, widely understood and lets reviewers run and reuse the code while keeping the copyright notice.
+- **Alternative:** no licence (all rights reserved): visible on GitHub but not reusable.
