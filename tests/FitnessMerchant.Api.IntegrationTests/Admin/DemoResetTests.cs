@@ -105,7 +105,9 @@ public class DemoResetTests(PostgresFixture postgres)
         await AddVisitorProductAsync(connectionString);
         await SetLastResetAsync(connectionString, DateTimeOffset.UtcNow.AddHours(-7));
 
-        await using var factory = await StartDemoAsync(connectionString);
+        // The overdue reset seeds the demo accounts itself, as soon as the app starts; seeding them here as well would
+        // race it for the same rows.
+        await using var factory = await StartDemoAsync(connectionString, seedDemoUsers: false);
 
         var deadline = DateTimeOffset.UtcNow.AddSeconds(20);
         while (await VisitorProductsAsync(connectionString) > 0 && DateTimeOffset.UtcNow < deadline)
@@ -167,7 +169,7 @@ public class DemoResetTests(PostgresFixture postgres)
 
     private sealed record Counts(int Products, int Categories, int Brands, int Images, int Orders, int Reviews, int Users);
 
-    private static async Task<ApiFactory> StartDemoAsync(string connectionString)
+    private static async Task<ApiFactory> StartDemoAsync(string connectionString, bool seedDemoUsers = true)
     {
         var factory = new ApiFactory(connectionString, new Dictionary<string, string?>
         {
@@ -178,7 +180,10 @@ public class DemoResetTests(PostgresFixture postgres)
             ["DEMO_CUSTOMER_PASSWORD"] = CustomerPassword,
         });
         using var scope = factory.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<DemoUserSeeder>().SeedAsync();
+        if (seedDemoUsers)
+        {
+            await scope.ServiceProvider.GetRequiredService<DemoUserSeeder>().SeedAsync();
+        }
         return factory;
     }
 
