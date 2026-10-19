@@ -525,3 +525,10 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - builds and starts the stack from `.env.example`, waits for health and runs the journey;
   - on failure it prints the app log and uploads the report and trace (`actions/upload-artifact` v7.0.1 pinned by SHA; v7.0.2 was 9 days old).
 - **Windows clones:** a deep clone path pushes the longest migration paths past 260 characters (found in the fresh-clone test), so the README tells Windows users to set `core.longpaths` or clone into a short path.
+
+## D033: .NET 10.0.13 security update (K14)
+- **Exception to the two-week rule,** decided by the owner on 2026-10-16: 10.0.13 was released 2026-10-13 (44 CVEs, including denial-of-service fixes in `System.Security.Cryptography.Xml`/`Pkcs`). A patch release that only fixes security issues is taken as soon as it is available.
+- **Changed:** SDK 10.0.402 (`global.json`, `dotnet/sdk:10.0.402-noble`), runtime image `dotnet/aspnet:10.0.13-noble-chiseled-extra`, the five ASP.NET/EF Core packages and `dotnet-ef` to 10.0.13. Both images are pinned by digest again (sha256:0d99ebf… and sha256:3ed6558…, read 2026-10-16).
+- **Unchanged:** Npgsql 10.0.3, EFCore.NamingConventions 10.0.1, SkiaSharp, Scalar and test packages, which have no newer release inside the rule or no advisory.
+- **Own key repository stays** (D032): with 10.0.13 the EF Core package would no longer carry the advisories, but the 30-line repository works, is tested, and adds no dependency.
+- **Verified:** 0 vulnerable NuGet packages; 378 tests; the image reports runtime 10.0.13; the E2E journey passes against it.

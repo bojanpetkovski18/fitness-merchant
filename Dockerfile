@@ -11,7 +11,7 @@ COPY src/web/ ./
 RUN npm run build
 
 # 2. The API, published for Linux x64 (framework-dependent; the runtime image provides .NET).
-FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS api
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS api
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/api/FitnessMerchant.Api/FitnessMerchant.Api.csproj src/api/FitnessMerchant.Api/
@@ -21,7 +21,7 @@ RUN dotnet publish src/api/FitnessMerchant.Api/FitnessMerchant.Api.csproj --conf
     --self-contained false --no-restore --output /app
 
 # 3. Runtime: chiseled Ubuntu (no shell, no package manager), with ICU and time zones ("extra"). Non-root by default.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.12-noble-chiseled-extra@sha256:00e0ad6a7ef8c0c1391b87f05c7ac757a15740455688f2bfcd146a3f4b987efd
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.13-noble-chiseled-extra@sha256:3ed6558056b54d5c9dfefb7ff473728e022ff2bf1d976cbf8ee07b05ec594374
 WORKDIR /app
 COPY --from=api /app ./
 COPY --from=web /src/web/dist/web/browser ./wwwroot
