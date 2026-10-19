@@ -517,6 +517,10 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
   - Chromium only, one worker, no retries: a flaky journey should fail.
   - It reads the repo-root `.env` with Node's `process.loadEnvFile`, so it signs in as the same demo admin the stack seeds. Variables already set win.
   - It waits for the account menu, not the cart badge, to know a sign-in finished. The guest badge proves nothing, and navigating too early aborted the registration request.
+- **First CI run (PR #13) found two bugs, both fixed on this branch:**
+  - **Guest items lost on a reload during the sign-in merge.** The session loads before the cart store exists, so a page that is already signed in only loaded the server cart, and guest items an interrupted merge left in storage were never merged. Now a signed-in first load merges whatever is still stored. A retry after a merge that committed but whose response was lost would add the quantities twice (capped at min(10, stock), and visible in the cart before checkout). That is rarer and visible, while the old behaviour lost items silently. Server-side idempotency (a merge ID) was judged too heavy for this.
+  - **Order-dependent web spec.** The Angular test builder runs Vitest with `isolate: false` by default, so spec files in one worker share module state. The CDK caches its media-query `<style>` node per module, and `site-header.spec` running first made `csp-safe-media-matcher.spec` see 0 styles instead of 1. It also failed the `dev` push after the M12 merge. `isolate: true` in `angular.json` costs about 1 s locally (4.5 s to 5.5 s). Reproduced with a one-worker Vitest config and fixed under it.
+  - The journey now waits for the merge response, not the cart badge, before it navigates.
 - **CI job `e2e`:**
   - builds and starts the stack from `.env.example`, waits for health and runs the journey;
   - on failure it prints the app log and uploads the report and trace (`actions/upload-artifact` v7.0.1 pinned by SHA; v7.0.2 was 9 days old).
