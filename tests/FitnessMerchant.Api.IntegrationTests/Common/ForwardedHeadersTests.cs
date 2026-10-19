@@ -47,6 +47,29 @@ public class ForwardedHeadersTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.TooManyRequests, spoofed.StatusCode);
     }
 
+    [Fact]
+    public async Task A_front_end_that_appends_its_own_address_needs_a_forward_limit_of_two()
+    {
+        // D034: some platforms (possibly Cloud Run, checked on the deployment) forward "client, front-end". With two
+        // trusted hops each client gets its own budget, and whatever a client puts in front is still ignored.
+        await using var factory = new ApiFactory(await postgres.CreateDatabaseAsync(), new Dictionary<string, string?>
+        {
+            ["Test:RemoteIp"] = Proxy,
+            ["ReverseProxy:KnownNetworks"] = "10.0.0.0/8",
+            ["ReverseProxy:ForwardLimit"] = "2",
+            ["RateLimiting:AuthPermitLimit"] = "1",
+        });
+        using var browser = factory.CreateBrowserClient();
+
+        var aliceFirst = await SignInFromAsync(browser, "198.51.100.1, 203.0.113.10, 10.0.0.9");
+        var aliceSpoofing = await SignInFromAsync(browser, "198.51.100.2, 203.0.113.10, 10.0.0.9");
+        var bobFirst = await SignInFromAsync(browser, "203.0.113.20, 10.0.0.9");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, aliceFirst.StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, aliceSpoofing.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, bobFirst.StatusCode);
+    }
+
     private static async Task<HttpResponseMessage> SignInFromAsync(BrowserClient browser, string clientIp)
     {
         await browser.MeAsync();
