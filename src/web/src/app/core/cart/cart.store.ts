@@ -37,7 +37,10 @@ export class CartStore {
       const userId = this.session.user()?.id ?? null;
       untracked(() => {
         if (previousUserId === undefined || userId === previousUserId) {
-          if (previousUserId === undefined) void this.load();
+          // First run: a signed-in page load still merges guest items that a reload during the sign-in merge
+          // left in storage (mergeGuestCart just loads when there are none).
+          if (previousUserId === undefined)
+            void (userId !== null ? this.mergeGuestCart() : this.load());
         } else if (userId !== null && previousUserId === null) {
           void this.mergeGuestCart();
         } else {

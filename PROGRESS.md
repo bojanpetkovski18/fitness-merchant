@@ -17,7 +17,7 @@ Estimates are rough focused-work hours for agent and owner together, including r
 | M10 | Admin orders, dashboard, CSV | `#0010-admin-orders-dashboard-and-csv-export` | 8 h | done | 2026-10-15 | PR #10 merged; CI green. 348 API tests (incl. 25-pair transition table, SQL cross-checked dashboard, CSV neutralization mutation-checked) + 98 web tests; 48/48 browser checks (every status, restock, CSV parse, dashboard = psql) + M09 rerun 68/68 |
 | M11 | Reviews and ratings | `#0011-verified-buyer-reviews-and-ratings` | 4 h | done | 2026-10-15 | PR #11 merged; CI green. 356 API tests (incl. concurrent-review lock mutation-checked 5/5, seed consistency) + 104 web tests (incl. focus regression shown failing first); 37/37 browser checks (buy → Delivered → review, <script> as text, rating = psql, hide/show, 3 widths) |
 | M12 | Polish | `#0012-polish-states-responsive-a11y-perf-demo-reset` | 8 h | done | 2026-10-16 | PR #12 merged. 375 API + 112 web tests; 30 screens audited on the production build: 0 axe findings (both themes), no overflow at 320–1280 px or 200 % zoom, focus visible, 0 CSP violations; Lighthouse Home 94–96, Listing 92–93; catalog p95 6.87 ms; every known issue decided by the owner (docs/AUDIT.md) |
-| M13 | E2E, Docker, Compose | `#0013-e2e-test-production-docker-and-compose` | 6 h | in review | 2026-10-16 | 378 API tests (incl. data-protection keys regression shown failing first); Playwright journey with axe passed 3 consecutive runs + once on a fresh clone; cold build from a fresh clone 61 s; image 272 MB, UID 1654, headers checked; CI e2e job not run yet (runs on the PR) |
+| M13 | E2E, Docker, Compose | `#0013-e2e-test-production-docker-and-compose` | 6 h | in review | 2026-10-19 | 378 API + 113 web tests; Playwright journey with axe passed 3 consecutive runs (twice: before and after the CI fixes) + once on a fresh clone; cold build from a fresh clone 61 s; image 272 MB, UID 1654, headers checked. The first CI run (PR #13) found two bugs, fixed with regression tests (D032): guest items lost on a reload during the sign-in merge, and an order-dependent web spec |
 | M14 | Deploy, README, portfolio | `#0014-deployment-readme-architecture-portfolio` | 6 h | todo | none | |
 
 ## Measured results
@@ -62,6 +62,8 @@ Every number cited in the README or docs must appear here, with its method, mach
 | .NET test suite on 10.0.13 (378 tests) | 40.7 s (1 run) | `dotnet test --solution FitnessMerchant.slnx` (MTP summary) | M1 | 2026-10-16 |
 | Production image on 10.0.13 | 272,487,028 bytes (272 MB); runtime Microsoft.NETCore.App and AspNetCore.App 10.0.13 | `docker image inspect`; `dotnet --list-runtimes` in the image | M1 | 2026-10-16 |
 | E2E journey on 10.0.13 | 2 passes: 13.4 s, 7.6 s | `npx playwright test` against `docker compose up --build` | M1 | 2026-10-16 |
+| Web tests with `isolate: true` (113 tests) | 5.35–5.63 s (3 runs; 4.46 s without isolation); 37.2 s in a forced single worker | `npm run test:ci` (Vitest summary); `ng test --runner-config` with `maxWorkers: 1` | M1 | 2026-10-19 |
+| E2E journey after the CI fixes | 3 consecutive passes: 13.9 s, 8.7 s, 8.3 s | `npx playwright test` against `docker compose up --build` | M1 | 2026-10-19 |
 | Seed artwork size | 68 images, 60 kB total | `pg_size_pretty(sum(size_bytes))` on the seeded dev DB | M1 | 2026-10-13 |
 | Web production build, initial bundle (scaffold + shell only) | 274.85 kB raw / 74.75 kB estimated transfer | `npm run build` output (Angular CLI estimate, not a network measurement) | M1 | 2026-10-13 |
 
