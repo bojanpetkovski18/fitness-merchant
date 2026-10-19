@@ -1,0 +1,25 @@
+// "Open in GitHub Codespaces" (D034): the visitor's codespace builds and starts the same Docker Compose stack as a
+// local run, then opens the store. Pinned by digest, each at least two weeks old when chosen (2026-10-19):
+// base image 3.0.8-noble, docker-in-docker feature 4.1.2.
+{
+  "name": "Fitness Merchant",
+  "image": "mcr.microsoft.com/devcontainers/base:3.0.8-noble@sha256:d7c468679f45a52ad3673d06656b5bf16e488990b17216a1fa295d9e1f89d724",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker@sha256:ad3d6d36d95ee7f880f61f98862257f3e70253d3faef09f86af42fb87ee60429": {}
+  },
+  // Building the image (npm ci, Angular build, dotnet publish) needs more than the smallest machine.
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb"
+  },
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Fitness Merchant",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  // The placeholders in .env.example are enough: the stack only runs inside the visitor's own codespace.
+  "postCreateCommand": "test -f .env || cp .env.example .env",
+  "postStartCommand": "docker compose up --build --detach --wait --wait-timeout 600"
+}
