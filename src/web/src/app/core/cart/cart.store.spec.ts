@@ -167,6 +167,30 @@ describe('CartStore', () => {
     expect(toasts.toasts().at(-1)).toMatchObject({ tone: 'error', message: 'Only 1 available.' });
   });
 
+  it('a page load while signed in merges guest items an interrupted merge left behind', async () => {
+    // The session loads before the store exists (app initializer). A reload during the sign-in merge leaves the
+    // guest items in storage and the server cart without them; they must not be dropped silently.
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    backend = TestBed.inject(HttpTestingController);
+    session = TestBed.inject(SessionStore);
+    await signIn(customer);
+    guestCartStorage.write([{ productId, quantity: 1 }]);
+
+    store = TestBed.inject(CartStore);
+    TestBed.tick();
+    const merge = backend.expectOne('/api/cart/merge');
+    expect(merge.request.body).toEqual({ items: [{ productId, quantity: 1 }] });
+    merge.flush(cartOf(line()));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(guestCartStorage.read()).toEqual([]);
+    expect(store.itemCount()).toBe(1);
+  });
+
   it('guest: a failed quote restores both the view and the stored items', async () => {
     guestCartStorage.write([{ productId, quantity: 1 }]);
 

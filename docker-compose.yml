@@ -1,0 +1,48 @@
+# The whole stack from one command: docker compose up --build  ->  http://localhost:8080
+# Settings come from .env (cp .env.example .env). Data persists in the "pgdata" volume; reset it with
+# "docker compose down -v". For development with hot reload use docker-compose.dev.yml (database only) instead.
+name: fitness-merchant
+
+services:
+  db:
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      # PostgreSQL 18 images keep data under /var/lib/postgresql/18/docker.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    image: fitness-merchant:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Bound to localhost only.
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    environment:
+      ConnectionStrings__Database: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Database__MigrateOnStartup: "true"
+      Seed__Enabled: "true"
+      # Local runs are plain http on localhost; a real deployment keeps HTTPS-only cookies (K13, D032).
+      Auth__RequireHttps: "false"
+      DEMO_ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL:-}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
+      DEMO_CUSTOMER_EMAIL: ${DEMO_CUSTOMER_EMAIL:-}
+      DEMO_CUSTOMER_PASSWORD: ${DEMO_CUSTOMER_PASSWORD:-}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      DEMO_RESET_INTERVAL_HOURS: ${DEMO_RESET_INTERVAL_HOURS:-6}
+      Payments__Provider: ${Payments__Provider:-Fake}
+
+volumes:
+  pgdata:

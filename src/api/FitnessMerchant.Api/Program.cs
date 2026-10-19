@@ -16,6 +16,11 @@ using FitnessMerchant.Api.Infrastructure.Identity;
 using FitnessMerchant.Api.Infrastructure.Payments;
 using Scalar.AspNetCore;
 
+if (args.Contains(HealthProbe.Argument))
+{
+    return await HealthProbe.RunAsync();
+}
+
 var builder = WebApplication.CreateBuilder(args);
 builder.AddDevelopmentDotEnv();
 
@@ -39,6 +44,8 @@ builder.Services.AddAppForwardedHeaders(builder.Configuration);
 builder.Services.AddAppSpa();
 // SPEC section 9: HSTS in production. Sent only on HTTPS responses, and never for localhost.
 builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
+// No "Server: Kestrel" header: it only advertises the stack to scanners.
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.AddAppDatabase();
 builder.AddAppAuth();
@@ -96,3 +103,4 @@ foreach (var mapper in app.Services.GetServices<IEndpointMapper>())
 }
 
 await app.RunAsync();
+return 0;
