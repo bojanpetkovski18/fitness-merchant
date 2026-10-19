@@ -57,10 +57,11 @@ test('guest finds a product, registers, checks out; the admin ships it; the cust
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Display name').fill('E2E Shopper');
   await page.getByLabel('Password', { exact: true }).fill(password);
+  // The guest badge already says "1 item", so it proves nothing: wait for the merge itself before navigating.
+  const merged = page.waitForResponse((r) => r.url().endsWith('/api/cart/merge') && r.ok());
   await page.getByRole('button', { name: 'Create account' }).click();
-
-  // Signed in once the header shows the account menu (the guest badge already said "1 item", so it proves nothing).
   await expect(page.getByRole('button', { name: 'Account menu for E2E Shopper' })).toBeVisible();
+  await merged;
 
   // 5. The guest cart is merged into the new account's cart.
   await expect(page.getByRole('link', { name: 'Cart, 1 item' })).toBeVisible();
