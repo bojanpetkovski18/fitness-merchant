@@ -176,4 +176,4 @@ Challenges worth reading about:
 
 ## Licence
 
-To be decided by the owner.
+[MIT](LICENSE). The product names, brands and artwork are invented for this project.
