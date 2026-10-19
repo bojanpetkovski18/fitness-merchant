@@ -25,6 +25,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<OrderStatusChange> OrderStatusChanges => Set<OrderStatusChange>();
     public DbSet<Review> Reviews => Set<Review>();
     // D032: cookie-signing keys, shared by every instance and kept across restarts.
+    public DbSet<Features.Admin.DemoState> DemoState => Set<Features.Admin.DemoState>();
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
