@@ -532,3 +532,22 @@ Numbered, never renumbered. Superseded decisions stay with a note. "Pending" mea
 - **Unchanged:** Npgsql 10.0.3, EFCore.NamingConventions 10.0.1, SkiaSharp, Scalar and test packages, which have no newer release inside the rule or no advisory.
 - **Own key repository stays** (D032): with 10.0.13 the EF Core package would no longer carry the advisories, but the 30-line repository works, is tested, and adds no dependency.
 - **Verified:** 0 vulnerable NuGet packages; 378 tests; the image reports runtime 10.0.13; the E2E journey passes against it.
+
+## D034: No public hosting; the demo runs locally or in Codespaces (M14)
+- **Decision (owner, 2026-10-19):** no deployed demo. Visitors see the project through the README (screenshots in both themes, a short recording of the journey) and can run it:
+  - locally with `docker compose up --build` (M13);
+  - or with **"Open in GitHub Codespaces"**: `.devcontainer/devcontainer.json` starts the same Compose stack in the visitor's own codespace and opens the store. It runs on the visitor's free Codespaces hours, so it costs the owner nothing and needs no cloud account.
+- **Why:** a live demo needs a cloud account with a card, secrets on a host and ongoing care. The code, tests, CI and the recording show the project's quality; anyone who wants to click through can do so in one step.
+- **Trade-offs:** no link a client can open in two seconds. A codespace builds the image on first start, which takes a few minutes. SPEC criterion 10 now reads accordingly.
+- **Dev container:** base image `mcr.microsoft.com/devcontainers/base:3.0.8-noble` (built 2026-09-10) and the `docker-in-docker` feature 4.1.2 (2026-09-29), both pinned by digest; a 4-core machine, because the image build needs it. Inside a codespace the app is served on plain http behind GitHub's forwarding proxy, which the Compose file already allows (`Auth__RequireHttps=false`, D032).
+- **Hosting research, kept for later** (read 2026-10-19 on the providers' own pages):
+  - Google Cloud Run free tier: 180,000 vCPU-seconds, 360,000 GiB-seconds and 2 million requests a month (request-based billing); 1 GiB egress in North America.
+  - Neon Free: 1 GB storage per project, 100 CU-hours per project, scale to zero after 5 minutes (fixed), resume in "a few hundred milliseconds", 6-hour restore window, no card.
+  - Fly.io: no free tier for new organisations; shared-cpu-1x 512 MB $3.69 a month; Managed Postgres from $38 a month.
+  - Render Free: sleeps after 15 idle minutes and takes about a minute to wake; its free Postgres expires after 30 days.
+  - Railway: Hobby $5 a month including $5 of usage; about $10 per GB of RAM a month.
+  - The first choice was Cloud Run + Neon (about $0 at demo traffic). Google's documentation does not say whether Cloud Run's front end appends its own address to X-Forwarded-For; check that on a live service before trusting the header.
+- **Prepared for hosting anyway** (small, tested, harmless locally):
+  - **Demo reset schedule in the database** (`demo_state`): each instance resets at startup and every 10 minutes once the last reset is `DEMO_RESET_INTERVAL_HOURS` old, because a scale-to-zero host never keeps one process alive that long. A regression test showed the old in-process timer never firing.
+  - **Data-protection keys encrypted with a certificate** when `DataProtection__CertificatePemPath` names a PEM file (certificate plus private key), so a database leak alone cannot forge sessions. Not set locally.
+  - **`ReverseProxy__ForwardLimit`** (1 to 3): how many trusted hops to read from X-Forwarded-For. A test shows why it matters: with one hop behind a front end that appends itself, every client shares one sign-in budget.
