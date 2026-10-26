@@ -42,6 +42,7 @@ flowchart TD
 
 - **Endpoints are thin:** they bind the request, apply authorization and rate-limit policies, and call a handler. Handlers own the logic and the queries.
 - **Reads** use `AsNoTracking` and projections; filtering, sorting, paging and aggregation run in SQL. Sort columns come from fixed allow-lists.
+- **Content-Security-Policy:** `script-src 'self'` and `style-src 'self'` with no `'unsafe-inline'`. The only inline styles allowed are three Angular CDK base style blocks, by hash (D036); the E2E journey fails on any violation.
 - **Errors** are problem details with a `traceId`. Validation runs on the server; the client's checks only save a round trip.
 - **Health:** `/health/live` (process) and `/health` (includes the database). The container's `HEALTHCHECK` runs the app itself with `--health-check`, because the chiseled image has no shell or curl.
 

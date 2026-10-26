@@ -27,11 +27,22 @@ async function expectAccessible(page: Page, label: string): Promise<void> {
   expect(blocking, `axe on ${label}`).toEqual([]);
 }
 
+/** Collects Content-Security-Policy violations the browser reports for a page (the CSP is strict: D029, D036). */
+function watchCsp(page: Page, violations: string[]): void {
+  page.on('console', (message) => {
+    if (message.type() === 'error' && message.text().includes('Content Security Policy')) {
+      violations.push(`${page.url()}: ${message.text().slice(0, 160)}`);
+    }
+  });
+}
+
 test('guest finds a product, registers, checks out; the admin ships it; the customer sees it', async ({
   page,
   browser,
 }) => {
   const email = `e2e-${Date.now()}@test.example`;
+  const cspViolations: string[] = [];
+  watchCsp(page, cspViolations);
   const password = 'E2e-Shopper-Pass-1';
 
   // 1–2. A guest searches the supplements and narrows to one category.
@@ -98,11 +109,16 @@ test('guest finds a product, registers, checks out; the admin ships it; the cust
   // 8. The admin marks the order as shipped (a separate browser session).
   const adminContext = await browser.newContext();
   const admin = await adminContext.newPage();
+  watchCsp(admin, cspViolations);
   await admin.goto('/sign-in');
   await admin.getByLabel('Email').fill(adminEmail);
   await admin.getByLabel('Password', { exact: true }).fill(adminPassword);
   await admin.getByRole('button', { name: 'Sign in' }).click();
   await expect(admin.getByRole('button', { name: /^Account menu for / })).toBeVisible();
+  // The account menu is a CDK overlay, like the status dialog below: both load CDK styles at runtime.
+  await admin.getByRole('button', { name: /^Account menu for / }).click();
+  await expect(admin.getByRole('menu')).toBeVisible();
+  await admin.keyboard.press('Escape');
   await admin.goto(`/admin/orders?q=${orderNumber}`);
   await admin.getByRole('link', { name: orderNumber }).first().click();
   await expect(admin.getByRole('heading', { level: 1 })).toHaveText(orderNumber);
@@ -119,4 +135,7 @@ test('guest finds a product, registers, checks out; the admin ships it; the cust
   await expect(page.getByRole('main')).toContainText('Shipped');
   await expect(page.getByRole('main')).toContainText('Tracking E2E-1');
   await expectAccessible(page, 'customer order');
+
+  // Overlays and dialogs must work under the strict CSP, not just look right.
+  expect(cspViolations).toEqual([]);
 });

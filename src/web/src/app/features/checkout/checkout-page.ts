@@ -177,7 +177,9 @@ export class CheckoutPage {
     switch (code) {
       case 'payment-declined':
       case 'payment-error':
+        // The code is asked for again; it only counts as missing once the customer tries to continue.
         this.payment.controls.cvc.reset();
+        this.submitted.update((s) => ({ ...s, 2: false }));
         this.alert.set({
           message: `${problem.title} No money was taken and your cart has been kept.`,
         });

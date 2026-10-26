@@ -6,8 +6,19 @@ namespace FitnessMerchant.Api.Common;
 /// </summary>
 public sealed class SecurityHeadersMiddleware(RequestDelegate next, IHostEnvironment environment)
 {
+    /// <summary>
+    /// D036: the Angular CDK adds three small &lt;style&gt; blocks the first time an overlay, dialog or
+    /// screen-reader-only text appears. They are allowed by hash, so exactly these bytes and nothing else run as
+    /// inline style. The hashes belong to @angular/cdk 22.2.0; after a CDK update the E2E journey fails on a CSP
+    /// violation, and its message names the new hash.
+    /// </summary>
+    internal const string CdkStyleHashes =
+        "'sha256-CcrXDjmowgW29Hlg/uZ8h05hSs8VRqliv/k7QWU4Yb0=' " + // .cdk-overlay-container, .cdk-global-overlay-wrapper
+        "'sha256-UssxMTUZa7g+WrWTxbVzFpE3o3lEbjO69XA8YUVYbJ4=' " + // .cdk-dialog-container
+        "'sha256-5Aa95/ZO6hntqOK1ZYDkfF0M76NFmrG+N39v6gp+12k='"; // .cdk-visually-hidden
+
     internal const string ContentSecurityPolicy =
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; " +
+        "default-src 'self'; script-src 'self'; style-src 'self' " + CdkStyleHashes + "; img-src 'self' data:; font-src 'self'; " +
         "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 
     internal const string PermissionsPolicy =
