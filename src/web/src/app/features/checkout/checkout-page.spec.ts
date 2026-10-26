@@ -178,6 +178,9 @@ describe('CheckoutPage', () => {
       'Your card was declined. No money was taken and your cart has been kept.',
     );
     expect(field('pay-cvc').value).toBe('');
+    // The cleared code is not an error yet: the customer has not had a chance to type it again.
+    expect(field('pay-cvc').getAttribute('aria-invalid')).not.toBe('true');
+    expect(element.textContent).not.toContain('Security code is required');
   });
 
   it('maps server field errors back to the shipping step', async () => {
