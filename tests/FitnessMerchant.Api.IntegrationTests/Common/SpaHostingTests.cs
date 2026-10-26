@@ -26,7 +26,10 @@ public sealed class SpaHostingTests(PostgresFixture postgres) : IDisposable
             Assert.Equal("text/html", page.Content.Headers.ContentType?.MediaType);
             Assert.Contains("fm-test-index", await page.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
             Assert.Equal("no-cache", page.Headers.CacheControl?.ToString());
-            Assert.Contains("script-src 'self'", page.Headers.GetValues("Content-Security-Policy").Single(), StringComparison.Ordinal);
+            var csp = page.Headers.GetValues("Content-Security-Policy").Single();
+            Assert.Contains("script-src 'self';", csp, StringComparison.Ordinal);
+            // Inline style is allowed only by hash (the CDK base styles, D036), never wholesale.
+            Assert.DoesNotContain("unsafe-inline", csp, StringComparison.Ordinal);
         }
         Assert.Equal(HttpStatusCode.OK, bundle.StatusCode);
         Assert.Equal("public, max-age=31536000, immutable", bundle.Headers.CacheControl?.ToString());
